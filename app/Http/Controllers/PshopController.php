@@ -27,7 +27,7 @@ use App\Jobs\UpdateProductsVariationUser;
 use Symfony\Component\HttpFoundation\Response;
 
 
-class WCController extends Controller
+class PshopController extends Controller
 {
     public function getLanguages()
     {
@@ -433,24 +433,15 @@ class WCController extends Controller
         return response()->json($updatedProduct);
     }
 
-    public function updateAllProductFromHolooToWC3(Request $config)
+    public function updateAllProductFromHolooToWC3()
     {
 
         $user=auth()->user();
 
-        if (!strstr( $user->queue_server, 'user' ) and ProductRequest::where(['user_id' => $user->id])->whereNull("request_finish")->exists()) {
-            return $this->sendResponse('شما یک درخواست در 24 ساعت گذشته ارسال کرده اید.شما هر 24 ساعت می توانید یک درخواست ارسال کنید', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
-        }
-        $this->updateConfig($config);
         ini_set('max_execution_time', 0); // 120 (seconds) = 2 Minutes
         set_time_limit(0);
-        $cf=(object)$config->all();
+        $cf=(object)$user->config;
         UpdateProductFind::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"serial"=>$user->serial,"apiKey"=>$user->apiKey,"holooDatabaseName"=>$user->holooDatabaseName,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret,"cloudTokenExDate"=>$user->cloudTokenExDate,"cloudToken"=>$user->cloudToken, "holo_unit"=>$user->holo_unit, "plugin_unit"=>$user->plugin_unit,"user_traffic"=>$user->user_traffic,"poshak"=>$user->poshak],$config->product_cat,$cf,1)->onConnection($user->queue_server)->onQueue("high");
-
-        $productRequest = new ProductRequest;
-        $productRequest->user_id = $user->id;
-        $productRequest->request_time = Carbon::now();
-        $productRequest->save();
 
         return $this->sendResponse('درخواست به روزرسانی محصولات با موفقیت دریافت شد ', Response::HTTP_OK, ["result"=>["msg_code"=>0]]);
 
@@ -483,7 +474,7 @@ class WCController extends Controller
             $HolooDb = $Dbname[1];
             $failures = [];
 
-            $user = User::where(['holooDatabaseName' => $HolooDb, 'holooCustomerID' => $HolooUser])->first();
+            $user = User::first();
             $hook->content = json_encode($request->all());
             $hook->user_id = $user->id ?? null;
 
@@ -587,17 +578,7 @@ class WCController extends Controller
             $hook->content = json_encode($request->all());
             $hook->user_id = ($user->id) ?? null;
             $hook->save();
-            if($user==null){
-                return $this->sendResponse('کاربر مورد نظر یافت نشد', Response::HTTP_OK,[]);
-            }
-            if($user->active==false){
-                log::info("user is not active");
-                return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_OK,[]);
-            }
-            if($user->poshak==false){
-                log::info("user poshak account is not active");
-                return $this->sendResponse('سرویس پوشاک برای کاربر مورد نظر غیر فعال است', Response::HTTP_OK,[]);
-            }
+
             auth()->login($user);
             $HolooIDs=explode(",",str_replace("-","*",$request->MsgValue));
             $Messages=explode(",",$request->Message);
@@ -731,18 +712,6 @@ class WCController extends Controller
 
                 foreach ($batchFailers as $batchFailer) {
                     $unicHoloCodes=$this->getAllParentChildCode($batchFailer , $holooProductsParent);
-                    // $holooProduct=$holooProducts[(string)$unicHoloCodes[0]];
-                    // $param = [
-                    //     "holooCode" => "",
-                    //     "holooName" => $this->arabicToPersian($holooProduct->name),
-                    //     'regular_price' => (string)$this->get_price_type($config->sales_price_field,$holooProduct),
-                    //     'price' => $this->get_price_type($config->special_price_field,$holooProduct),
-                    //     'sale_price' => (string)$this->get_price_type($config->special_price_field,$holooProduct),
-                    //     'wholesale_customer_wholesale_price' => 0,
-                    //     'stock_quantity' => 0,
-                    // ];
-                    // $wc_parent_id=$this->createSingleVariationProduct($param,null,"variable",$holooProduct);
-
 
 
                     $msgValue = implode(',', $unicHoloCodes);
@@ -757,32 +726,6 @@ class WCController extends Controller
                     $this->mirrorPoshakHook($request,$msgValue,$message);
 
 
-
-                    // foreach ($unicHoloCodes as $holooID){
-
-                    //     log::info("try to insert product with holoo id ".$holooID." for user ".$hook->user_id);
-                    //     $holooProduct=$holooProducts[(string)$holooID];
-
-                    //     $param = [
-                    //         "holooCode" => $holooID,
-                    //         "holooName" => $this->arabicToPersian($holooProduct->name),
-                    //         'regular_price' => (string)$this->get_price_type($config->sales_price_field,$holooProduct),
-                    //         'price' => $this->get_price_type($config->special_price_field,$holooProduct),
-                    //         'sale_price' => (string)$this->get_price_type($config->special_price_field,$holooProduct),
-                    //         'wholesale_customer_wholesale_price' => $this->get_price_type($config->wholesale_price_field,$holooProduct),
-                    //         'stock_quantity' => $this->get_exist_type($config->product_stock_field,$holooProduct),
-                    //     ];
-
-
-
-
-                    //     $response=$this->createSingleProduct($param,null,"variable",$holooProduct,$wc_parent_id);
-
-
-                    //     log::info("product insert");
-
-                    //     //log::info(json_encode($response));
-                    // }
                 }
 
 
@@ -1512,16 +1455,7 @@ class WCController extends Controller
         return $response;
     }
 
-    public function updateConfig(Request $request){
-        $user=auth()->user();
-        $id=$user->id;
-        log::info("new config for user id $id resived");
-        User::where(['id'=>$user->id,])
-        ->update([
-            'config' => $request->all(),
-        ]);
-        return $this->sendResponse('بروزرسانی تنظیمات با موفقیت دریافت شد ', Response::HTTP_OK, ["result"=>["msg_code"=>0]]);
-    }
+
 
     public function self_config(){
         $user=auth()->user();
