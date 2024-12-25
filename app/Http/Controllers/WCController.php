@@ -68,10 +68,6 @@ class WCController extends Controller
         return response()->json(['error' => 'Persian language not found.'], 404);
     }
 
-
-    /*
-     * Create Single (and simple) product into Woocommerce
-     */
     public function createSingleProduct($param,$categories=null,$type="simple",$cluster=null,$wc_parent_id=null)
     {
         $user=auth()->user();
@@ -339,7 +335,6 @@ class WCController extends Controller
 
     }
 
-
     private function fetchAllHolloProds(){
 
         $response=app('App\Http\Controllers\HolooController')->fetchAllHolloProds();
@@ -381,10 +376,6 @@ class WCController extends Controller
         ];
         return str_replace(array_keys($characters), array_values($characters), $string);
     }
-
-    /*
-     * Update Single Product
-     */
 
     public function updateSingleProduct($params)
     {
@@ -442,15 +433,6 @@ class WCController extends Controller
         return response()->json($updatedProduct);
     }
 
-
-
-
-
-
-    /*
-     * Update All Products
-     */
-
     public function updateAllProductFromHolooToWC3(Request $config)
     {
 
@@ -474,9 +456,6 @@ class WCController extends Controller
 
     }
 
-
-
-
     public function get_all_holoo_code_exist(){
         $psProducts=$this->getProductsWithQuantities();
         $response_products=[];
@@ -490,217 +469,112 @@ class WCController extends Controller
         return $response_products;
     }
 
-    public function holooWebHook(Request $request){
-        ini_set('max_execution_time', 0); // 120 (seconds) = 2 Minutes
+    public function holooWebHookPrestaShop(Request $request) {
+        ini_set('max_execution_time', 0);
         set_time_limit(0);
-        // {
-        //     "Dbname": "S11216632_holoo1",
-        //     "Table": "Article",
-        //     "MsgType": "0",
-        //     "MsgValue": "0101001,0907057,0914097,0914098,0914099",
-        //     "MsgError": "",
-        //     "Message": "درج کالا"
-        //   }
-        // {
-        //     "Dbname": "S11216632_holoo1",
-        //     "Table": "Article",
-        //     "MsgType": "1",
-        //     "MsgValue": "0101001,0907057,0914097,0914098,0914099",
-        //     "MsgError": "",
-        //     "Message": "ویرایش"
-        //   }
         log::info($request->all());
-        log::info("webhook resived");
+        log::info("Webhook received");
+
         $hook = new Webhook();
 
-        if(isset($request->Table) && strtolower($request->Table)=="article" && ($request->MsgType==1 or $request->MsgType==0)){
-            $Dbname=explode("_",$request->Dbname);
-            $HolooUser=$Dbname[0];
-            $HolooDb=$Dbname[1];
-            $failers =[];
-            $user = User::where(['holooDatabaseName'=>$HolooDb,'holooCustomerID'=>$HolooUser])->first();
+        if (isset($request->Table) && strtolower($request->Table) == "article" && ($request->MsgType == 1 || $request->MsgType == 0)) {
+            $Dbname = explode("_", $request->Dbname);
+            $HolooUser = $Dbname[0];
+            $HolooDb = $Dbname[1];
+            $failures = [];
 
+            $user = User::where(['holooDatabaseName' => $HolooDb, 'holooCustomerID' => $HolooUser])->first();
             $hook->content = json_encode($request->all());
-
-            $hook->user_id = ($user->id) ?? null;
+            $hook->user_id = $user->id ?? null;
 
             $hook->save();
-            if($user==null){
-                return $this->sendResponse('کاربر مورد نظر یافت نشد', Response::HTTP_OK,[]);
+
+            if ($user == null) {
+                return $this->sendResponse('کاربر مورد نظر یافت نشد', Response::HTTP_OK, []);
             }
-            if($user->active==false){
-                log::info("user is not active");
-                return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_OK,[]);
+
+            if ($user->active == false) {
+                log::info("User is not active");
+                return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_OK, []);
             }
 
             auth()->login($user);
 
+            $HolooIDs = explode(",", $request->MsgValue);
+            $Messages = explode(",", $request->Message);
 
-
-            $HolooIDs=explode(",",$request->MsgValue);
-            $Messages=explode(",",$request->Message);
-
-            if(count($HolooIDs)>100){
-                log::alert("too many holoo ids");
-                return $this->sendResponse('تعداد کالا برای اعمال در هوک بیش از مقدار است', Response::HTTP_OK,[]);;
+            if (count($HolooIDs) > 100) {
+                log::alert("Too many Holoo IDs");
+                return $this->sendResponse('تعداد کالا برای اعمال در هوک بیش از مقدار است', Response::HTTP_OK, []);
             }
-            $HolooIDs=array_reverse($HolooIDs);
-            $Messages=array_reverse($Messages);
 
+            $HolooIDs = array_reverse($HolooIDs);
+            $Messages = array_reverse($Messages);
 
+            $config = json_decode($user->config);
 
-            $config=json_decode($user->config);
-            if(!$config) return $this->sendResponse('تنظیمات کاربر دریافت نشده است', Response::HTTP_OK,[]);
+            if (!$config) return $this->sendResponse('تنظیمات کاربر دریافت نشده است', Response::HTTP_OK, []);
 
-            $WCProd=$this->getWcProductWithHolooId($HolooIDs);
+            $PSProducts = $this->getPSProductsByHolooIds($HolooIDs);
 
-            //log::info($WCProd);
+            foreach ($HolooIDs as $holooID) {
+                $index_value = array_search($holooID, $HolooIDs);
 
-            foreach ($HolooIDs as $holooID){
-                $index_value=array_search($holooID, $HolooIDs);
-                if ((int)$Messages[$index_value]==0){
-                    $failers[]=$holooID;
+                if ((int)$Messages[$index_value] == 0) {
+                    $failures[] = $holooID;
                 }
             }
 
-            $holooProduct=app('App\Http\Controllers\HolooController')->GetMultiProductHoloo($HolooIDs);
-            if (!isset(json_decode($holooProduct)->data->product)){
-                Log::alert("holo code not found for holoo id '".implode(',', $HolooIDs)."' at webhook resived");
+            $holooProduct = app('App\\Http\\Controllers\\HolooController')->GetMultiProductHoloo($HolooIDs);
+
+            if (!isset(json_decode($holooProduct)->data->product)) {
+                Log::alert("Holoo code not found for Holoo ID '" . implode(',', $HolooIDs) . "' at webhook received");
                 Log::alert(json_encode($holooProduct));
-                return $this->sendResponse('هیچ کد هلویی یافت نشد', Response::HTTP_OK,[]);
-            }
-            $holooProducts=json_decode($holooProduct)->data->product;
-            $holooProducts= $this->reMapHolooProduct($holooProducts);
-
-            if (count($WCProd)>0) {    // if ($request->MsgType==1) {
-
-
-                //update product
-
-
-                if(is_object($WCProd)){
-                    Log::alert("wc response code isnt array for holoo id ".implode(',', $HolooIDs)." at webhook resived");
-                    Log::alert(json_encode($WCProd));
-                    return;
-                }
-                $WCProds=(object)$WCProd;
-                $params=[];
-
-
-
-                foreach($WCProds as $WCProd){
-
-
-                    if($WCProd->type=="variable"){
-                        $this->getVariationMultiProductWithHoloo($WCProd,$holooProducts,$config);
-                        continue;
-                    }
-
-                    if(isset($WCProd->meta_data) and count($WCProd->meta_data)>0){
-                        $wholesale_customer_wholesale_price= $this->findKey($WCProd->meta_data,'wholesale_customer_wholesale_price');
-                    }
-                    else{
-                        $wholesale_customer_wholesale_price=0;
-                    }
-
-                    // //return $holooProduct;
-                    // $holooProduct=$this->findProduct($holooProduct,$holooID);
-                    if(isset($WCProd->id) and $WCProd->id){
-                        $wcHolooCode = $this->findKey($WCProd->meta_data,'_holo_sku');
-                        if ($wcHolooCode==null or !array_key_exists((string)$wcHolooCode,$holooProducts)) continue;
-
-                        $holooProduct=$holooProducts[(string)$wcHolooCode] ;
-
-                        $params[] = [
-                            'id' => $WCProd->id,
-                            'name' =>(isset($config->update_product_name) && $config->update_product_name=="1") ? $this->arabicToPersian($holooProduct->name) : $WCProd->name,
-                            'regular_price' =>(isset($config->update_product_price) && $config->update_product_price=="1")  ? (string) $this->get_price_type($config->sales_price_field,$holooProduct): (int)$WCProd->regular_price,
-                            'price' => (isset($config->update_product_price) && $config->update_product_price=="1") ? $this->get_price_type($config->special_price_field,$holooProduct) :(int)$WCProd->sale_price ,
-                            'sale_price' =>(isset($config->update_product_price) && $config->update_product_price=="1") ? (string) $this->get_price_type($config->special_price_field,$holooProduct):(int)$WCProd->sale_price,
-                            'wholesale_customer_wholesale_price' => (isset($config->update_product_price) && $config->update_product_price=="1") && (isset($wholesale_customer_wholesale_price)) ? $this->get_price_type($config->wholesale_price_field,$holooProduct): ((isset($wholesale_customer_wholesale_price)) ? (int)$wholesale_customer_wholesale_price : null),
-                            'stock_quantity' => (isset($config->update_product_stock) && $config->update_product_stock=="1") ? $this->get_exist_type($config->product_stock_field,$holooProduct) : (int)$WCProd->stock_quantity
-                        ];
-                        //log::info(json_encode($response));
-                    }
-                    else{
-                        continue;
-                    }
-
-                }
-                if (count($params)>0){
-                    $this->updateWCMultiProduct($params);
-                }
-                log::info("webhook update product finish");
-
-            }
-            else{
-                log::info("wc product not found in webhook for user id ".$user->id);
+                return $this->sendResponse('هیچ کد هلویی یافت نشد', Response::HTTP_OK, []);
             }
 
+            $holooProducts = json_decode($holooProduct)->data->product;
+            $holooProducts = $this->reMapHolooProduct($holooProducts);
 
+            foreach ($PSProducts as $PSProduct) {
+                if ($PSProduct['type'] == "variable") {
+                    $this->updatePSVariationMultiProductWithHoloo($PSProduct, $holooProducts, $config);
+                    continue;
+                }
 
-            if (count($failers)>0 && isset($config->insert_new_product) && $config->insert_new_product==1) {
-                //log::info("try to insert product for user ".$hook->user_id);
-                foreach ($failers as $holooID){
+                $holooCode = $PSProduct['reference'];
 
-                    log::info("try to insert product with holoo id ".$holooID." for user ".$hook->user_id);
-                    $holooProduct=$holooProducts[(string)$holooID];
+                if ($holooCode == null || !array_key_exists((string)$holooCode, $holooProducts)) continue;
+
+                $holooProduct = $holooProducts[(string)$holooCode];
+
+                $data = [
+                    'id' => $PSProduct['id'],
+                    'name' => (isset($config->update_product_name) && $config->update_product_name == "1") ? $this->arabicToPersian($holooProduct['name']) : $PSProduct['name'],
+                    'price' => (isset($config->update_product_price) && $config->update_product_price == "1") ? $this->get_price_type($config->sales_price_field, $holooProduct) : $PSProduct['price'],
+                    'quantity' => (isset($config->update_product_stock) && $config->update_product_stock == "1") ? $this->get_exist_type($config->product_stock_field, $holooProduct) : $PSProduct['quantity']
+                ];
+
+                $this->updatePSProduct($data);
+            }
+
+            if (count($failures) > 0 && isset($config->insert_new_product) && $config->insert_new_product == 1) {
+                foreach ($failures as $holooID) {
+                    $holooProduct = $holooProducts[(string)$holooID];
 
                     $param = [
-                        "holooCode" => $holooID,
-                        "holooName" => $this->arabicToPersian($holooProduct->name),
-                        'regular_price' => (string)$this->get_price_type($config->sales_price_field,$holooProduct),
-                        'price' => $this->get_price_type($config->special_price_field,$holooProduct),
-                        'sale_price' => (string)$this->get_price_type($config->special_price_field,$holooProduct),
-                        'wholesale_customer_wholesale_price' => $this->get_price_type($config->wholesale_price_field,$holooProduct),
-                        'stock_quantity' => $this->get_exist_type($config->product_stock_field,$holooProduct),
+                        "reference" => $holooID,
+                        "name" => $this->arabicToPersian($holooProduct->name),
+                        'price' => $this->get_price_type($config->sales_price_field, $holooProduct),
+                        'quantity' => $this->get_exist_type($config->product_stock_field, $holooProduct),
                     ];
 
-                    if( $user->poshak==true and property_exists($holooProduct, 'poshak') and $holooProduct->poshak!=null){
-                        log::info("user poshak is enable.this webhook is article type and ignore insert product.this hook just for simple product insert.");
-                    }
-                    else{
-                        //log::info($holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode);
-                        if(isset($config->product_cat->{$holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode}) and
-                        is_array($config->product_cat->{$holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode}) and
-                        $config->product_cat->{$holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode}[0]!=null
-                        ) {
-                            $cat["id"] = $config->product_cat->{$holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode}[0];
-
-                        }
-                        elseif(isset($config->product_cat->{$holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode}) and
-                        is_object($config->product_cat->{$holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode}) and
-                        $config->product_cat->{$holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode}->{0}!=null
-                        ) {
-                            $cat["id"] = $config->product_cat->{$holooProduct->mainGroupCode.'-'.$holooProduct->sideGroupCode}->{0};
-
-                        }
-                        else {
-                            // Handle the case when the object or array does not have a value
-                            // You can add your own code here
-                            $cat=null;
-                        }
-                        //log::info($cat["id"]);
-                        $response=$this->createSingleProduct($param,$cat);
-
-                        log::info("product insert");
-                    }
-
-
-                    //log::info(json_encode($response));
+                    $this->createPSProduct($param);
                 }
-                log::info("product webhook insert finish");
-
             }
 
-            elseif(count($failers)>0) {
-                log::info("wc product not found and add new product is off for holo codes ".json_encode($failers));
-            }
-
-            if($user->mirror==true){
-                $this->mirrorHook($request);
-            }
-            return $this->sendResponse('محصول با موفقیت دریافت شدند', Response::HTTP_OK,[]);
+            log::info("Webhook processing finished");
+            return $this->sendResponse('محصولات با موفقیت به روز شدند', Response::HTTP_OK, []);
         }
         elseif(isset($request->Table) && strtolower($request->Table)=="poshak" && ($request->MsgType==1 or $request->MsgType==0)){
             $Dbname=explode("_",$request->Dbname);
@@ -710,11 +584,8 @@ class WCController extends Controller
             $batchFailers =[];
 
             $user = User::where(['holooDatabaseName'=>$HolooDb,'holooCustomerID'=>$HolooUser])->first();
-
             $hook->content = json_encode($request->all());
-
             $hook->user_id = ($user->id) ?? null;
-
             $hook->save();
             if($user==null){
                 return $this->sendResponse('کاربر مورد نظر یافت نشد', Response::HTTP_OK,[]);
@@ -728,25 +599,17 @@ class WCController extends Controller
                 return $this->sendResponse('سرویس پوشاک برای کاربر مورد نظر غیر فعال است', Response::HTTP_OK,[]);
             }
             auth()->login($user);
-
             $HolooIDs=explode(",",str_replace("-","*",$request->MsgValue));
             $Messages=explode(",",$request->Message);
-
             if(count($HolooIDs)>100){
                 log::alert("too many holoo ids");
                 return $this->sendResponse('تعداد کالا برای اعمال در هوک بیش از مقدار است', Response::HTTP_OK,[]);;
             }
             $HolooIDs=array_reverse($HolooIDs);
             $Messages=array_reverse($Messages);
-
-
-
             $config=json_decode($user->config);
             if(!$config) return $this->sendResponse('تنظیمات کاربر دریافت نشده است', Response::HTTP_OK,[]);
-
             $WCProd=$this->getWcProductWithHolooId($HolooIDs);
-
-
             foreach ($HolooIDs as $holooID){
                 $index_value=array_search($holooID, $HolooIDs);
                 if ((int)$Messages[$index_value]==0){
@@ -756,9 +619,7 @@ class WCController extends Controller
                     $batchFailers[]=$holooID;
                 }
             }
-
             $holooProduct=app('App\Http\Controllers\HolooController')->GetMultiPoshakProductHoloo($HolooIDs);
-
             if (!isset($holooProduct)){
                 Log::alert("holo code not found for holoo id '".implode(',', $HolooIDs)."' at webhook resived");
                 Log::alert(json_encode($holooProduct));
@@ -766,31 +627,20 @@ class WCController extends Controller
             }
             $holooProducts=$holooProduct;
             $holooProducts= $this->reMapPoshakHolooProduct($holooProducts);
-            if (count($WCProd)>0) {    // if ($request->MsgType==1) {
-
-                //log::info("test");
-
-                //update product
-
-
+            if (count($WCProd)>0) {
                 if(is_object($WCProd)){
                     Log::alert("wc response code isnt array for holoo id ".implode(',', $HolooIDs)." at webhook resived");
                     Log::alert(json_encode($WCProd));
                     return;
                 }
                 $WCProds=(object)$WCProd;
-
-
                 foreach($WCProds as $WCProd){
                     if($WCProd->type=="variable"){
                         $this->getVariationMultiProductWithHolooPoshak($WCProd,$holooProducts,$config);
                         continue;
                     }
                 }
-
-
                 log::info("webhook update product finish");
-
             }
             else{
                 log::info("wc product not found in webhook for user id ".$user->id);
@@ -1001,167 +851,7 @@ class WCController extends Controller
 
             return $this->sendResponse('ویژگی با موفقیت دریافت شدند', Response::HTTP_OK,[]);
         }
-    }
 
-    public function holooWebHook1(Request $request){
-        // {
-        //     "Dbname": "S11216632_holoo1",
-        //     "Table": "Article",
-        //     "MsgType": "0",
-        //     "MsgValue": "0101001,0907057,0914097,0914098,0914099",
-        //     "MsgError": "",
-        //     "Message": "درج کالا"
-        //   }
-        // {
-        //     "Dbname": "S11216632_holoo1",
-        //     "Table": "Article",
-        //     "MsgType": "1",
-        //     "MsgValue": "0101001,0907057,0914097,0914098,0914099",
-        //     "MsgError": "",
-        //     "Message": "ویرایش"
-        //   }
-        log::info($request);
-        log::info("webhook resived");
-
-        if(isset($request->Table) && strtolower($request->Table)=="article" && ($request->MsgType==1 or $request->MsgType==0)){
-            $Dbname=explode("_",$request->Dbname);
-            $HolooUser=$Dbname[0];
-            $HolooDb=$Dbname[1];
-            $user = User::where(['holooDatabaseName'=>$HolooDb,'holooCustomerID'=>$HolooUser,])
-            ->first();
-            if (!$user) {
-                $this->sendResponse('کاربر مورد نظر یافت نشد', Response::HTTP_NOT_FOUND,[]);
-            }
-
-            auth()->login($user);
-
-            $HolooIDs=explode(",",$request->MsgValue);
-            $HolooIDs=array_reverse($HolooIDs);
-            //array_shift($HolooIDs);
-
-            $config=json_decode($user->config);
-            if(!$config) return;
-
-
-
-            if ($request->MsgType==0 && $config->insert_new_product==1) {
-                //$HolooProds  = $this->fetchCategoryHolloProds($config->product_cat);
-                $HolooProds  = $this->fetchAllHolloProds();
-                //$HolooProds  =$HolooProds->result;    old code
-                $HolooProds  =$HolooProds->data->product;
-            }
-            foreach($HolooIDs as $holooID){
-
-                $WCProd=$this->getWcProductWithHolooId($holooID);
-
-                if ($request->MsgType==0 && $WCProd) {    // if ($request->MsgType==1) {
-
-
-                    //update product
-
-                    $holooProduct=app('App\Http\Controllers\HolooController')->GetSingleProductHoloo($holooID);
-                    $holooProduct=json_decode($holooProduct)->data->product;
-                    $holooProduct=$holooProduct[0];
-
-                    $WCProd=$this->getWcProductWithHolooId($holooID);
-                    $WCProd=$WCProd[0];
-
-                    if($WCProd->type=="variable"){
-                        $WCProd=$this->getVariationProductWithHoloo($holooID,$WCProd,$holooProduct,$config);
-                        Log::info("holo code found variation product ".$holooID);
-                        continue;
-                    }
-
-                    if(isset($WCProd->meta_data) and count($WCProd->meta_data)>0){
-                        $wholesale_customer_wholesale_price= $this->findKey($WCProd->meta_data,'wholesale_customer_wholesale_price');
-                    }
-                    else{
-                        $wholesale_customer_wholesale_price=0;
-                    }
-
-                    // //return $holooProduct;
-                    // $holooProduct=$this->findProduct($holooProduct,$holooID);
-                    if(isset($WCProd->id) and $WCProd->id){
-
-                        $param = [
-                            'id' => $WCProd->id,
-                            'name' =>(isset($config->update_product_name) && $config->update_product_name=="1") ? $this->arabicToPersian($holooProduct->name) : $WCProd->name,
-                            'regular_price' =>(isset($config->update_product_price) && $config->update_product_price=="1")  ? (string) $this->get_price_type($config->sales_price_field,$holooProduct): (int)$WCProd->regular_price,
-                            'price' => (isset($config->update_product_price) && $config->update_product_price=="1") ? $this->get_price_type($config->special_price_field,$holooProduct) :(int)$WCProd->sale_price ,
-                            'sale_price' =>(isset($config->update_product_price) && $config->update_product_price=="1") ? (string) $this->get_price_type($config->special_price_field,$holooProduct):(int)$WCProd->sale_price,
-                            'wholesale_customer_wholesale_price' => (isset($config->update_product_price) && $config->update_product_price=="1") && (isset($wholesale_customer_wholesale_price)) ? $this->get_price_type($config->wholesale_price_field,$holooProduct): ((isset($wholesale_customer_wholesale_price)) ? (int)$wholesale_customer_wholesale_price : null),
-                            'stock_quantity' => (isset($config->update_product_stock) && $config->update_product_stock=="1" && $this->get_exist_type($config->product_stock_field,$holooProduct)>0 and isset($WCProd->stock_quantity)) ? $this->get_exist_type($config->product_stock_field,$holooProduct) : 0
-                        ];
-
-
-                        updateWCSingleProduct::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret],$param,$holooID)->onConnection($user->queue_server)->onQueue("high");
-
-                    }
-                    else{
-                        continue;
-                    }
-
-                }
-                else if ($request->MsgType==0 && $config->insert_new_product==1) {
-
-                    $holooProduct=$this->findProduct($HolooProds,$holooID);
-                    //dd($holooProduct);
-                    if(!$holooProduct) continue;
-
-                    $param = [
-                        "holooCode" => $holooID,
-                        "holooName" => $this->arabicToPersian($holooProduct->name),
-                        'regular_price' => (string)$this->get_price_type($config->sales_price_field,$holooProduct),
-                        'price' => $this->get_price_type($config->special_price_field,$holooProduct),
-                        'sale_price' => (string)$this->get_price_type($config->special_price_field,$holooProduct),
-                        'wholesale_customer_wholesale_price' => $this->get_price_type($config->wholesale_price_field,$holooProduct),
-                        'stock_quantity' => ($this->get_exist_type($config->product_stock_field,$holooProduct)>0) ? $this->get_exist_type($config->product_stock_field,$holooProduct): 0,
-                    ];
-
-                    // if ((!isset($config->insert_product_with_zero_inventory) ) || (isset($config->insert_product_with_zero_inventory) && $config->insert_product_with_zero_inventory == "0")) {
-                    //     $param = [
-                    //         "holooCode" => $holooID,
-                    //         "holooName" => $this->arabicToPersian($holooProduct->name),
-                    //         'regular_price' => (string)$this->get_price_type($config->sales_price_field,$holooProduct),
-                    //         'price' => $this->get_price_type($config->special_price_field,$holooProduct),
-                    //         'sale_price' => (string)$this->get_price_type($config->special_price_field,$holooProduct),
-                    //         'wholesale_customer_wholesale_price' => $this->get_price_type($config->wholesale_price_field,$holooProduct),
-                    //         'stock_quantity' => ($holooProduct->exist>0) ? (int)$holooProduct->exist : 0,
-                    //     ];
-                    // }
-                    // elseif (isset($config->insert_product_with_zero_inventory) && $config->insert_product_with_zero_inventory == "1") {
-                    //     $param = [
-                    //         "holooCode" => $holooID,
-                    //         "holooName" => $this->arabicToPersian($holooProduct->name),
-                    //         'regular_price' => (string)$this->get_price_type($config->sales_price_field,$holooProduct),
-                    //         'price' => $this->get_price_type($config->special_price_field,$holooProduct),
-                    //         'sale_price' => (string)$this->get_price_type($config->special_price_field,$holooProduct),
-                    //         'wholesale_customer_wholesale_price' => $this->get_price_type($config->wholesale_price_field,$holooProduct),
-                    //         'stock_quantity' => ($holooProduct->exist>0) ? (int)$holooProduct->exist : 0,
-                    //     ];
-
-                    // }
-                    // else{
-                    //     continue;
-                    // }
-
-
-                    if(isset($holooProduct->Poshak)){
-                        createSingleProduct::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret],$param,$holooID,null,"variable",$holooProduct->Poshak)->onConnection($user->queue_server)->onQueue("medium");
-
-                    }
-                    else{
-                        log::info("product insert");
-                        createSingleProduct::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret],$param,$holooID)->onConnection($user->queue_server)->onQueue("medium");
-
-                    }
-                    // log::info(json_encode($response));
-
-                }
-
-            }
-            $this->sendResponse('محصول با موفقیت دریافت شدند', Response::HTTP_OK,[]);
-        }
     }
 
     public function handleWebhook(Request $request)
@@ -1209,7 +899,6 @@ class WCController extends Controller
             return response()->json(['message' => 'درخواست نامعتبر است'], Response::HTTP_BAD_REQUEST);
         }
     }
-
 
     private function getWcProductWithHolooId($holooCodes)
     {
@@ -1296,7 +985,6 @@ class WCController extends Controller
 
     }
 
-
     public function getWcConfig(){
         $user=auth()->user();
         $curl = curl_init();
@@ -1349,9 +1037,6 @@ class WCController extends Controller
 
         return json_decode($this->getWcConfig(),true)["product_cat"];
     }
-
-
-
 
     public function testProductVar(){
 
@@ -1508,7 +1193,6 @@ class WCController extends Controller
         }
     }
 
-
     private function findProduct($products,$holooCode){
         foreach ($products as $product) {
             $product=(object) $product;
@@ -1519,7 +1203,6 @@ class WCController extends Controller
         }
         return null;
     }
-
 
     private function findKey($array, $key)
     {
@@ -1583,7 +1266,6 @@ class WCController extends Controller
             ], 500);
         }
     }
-
 
     public function test(){
         $user = User::where(['id'=>13])->first();
@@ -1724,198 +1406,110 @@ class WCController extends Controller
         }
     }
 
+    public function updatePSVariations($variations, $holooProducts, $config)
+    {
+        $apiUrl = env('API_URL'); // URL پایه API پرستاشاپ
+        $apiKey = env('API_KEY'); // کلید API پرستاشاپ
 
+        try {
+            foreach ($variations as $productId) {
 
-    public function get_multi_variation_product($products_id){
-        $user=auth()->user();
-        // array of curl handles
-        $multiCurl = array();
-        // data to be returned
-        $result = array();
-        // multi handle
-        $mh = curl_multi_init();
-        foreach ($products_id as $i => $product_id) {
-            // URL from which data will be fetched
-            $fetchURL = $user->siteUrl.'/wp-json/wc/v3/products/'.$product_id.'/variations?per_page=100';
-            $multiCurl[$i] = curl_init();
-            curl_setopt($multiCurl[$i], CURLOPT_URL,$fetchURL);
-            curl_setopt($multiCurl[$i], CURLOPT_RETURNTRANSFER,1);
-            curl_setopt($multiCurl[$i], CURLOPT_USERPWD,$user->consumerKey. ":" . $user->consumerSecret);
-            curl_setopt($multiCurl[$i], CURLOPT_HTTP_VERSION,CURL_HTTP_VERSION_1_1);
-            curl_setopt($multiCurl[$i], CURLOPT_CUSTOMREQUEST,'GET');
-            curl_setopt($multiCurl[$i], CURLOPT_USERAGENT,'Holoo');
+                // دریافت ترکیب‌های محصول از پرستاشاپ
+                $combinationsUrl = "{$apiUrl}/api/combinations?output_format=JSON&filter[id_product]={$productId}&display=[id,id_product,id_stock_available,price,reference]";
+                $headers = [
+                    'Authorization: Basic ' . base64_encode($apiKey . ':')
+                ];
 
-            curl_multi_add_handle($mh, $multiCurl[$i]);
-        }
-        $index=null;
-        do {
-            curl_multi_exec($mh,$index);
-        } while($index > 0);
-        // get content and remove handles
-        foreach($multiCurl as $k => $ch) {
-            $response =curl_multi_getcontent($ch);
-            if ($response) {
-                $result[$k] = json_decode($response);
-            }
-            else{
-                $result[$k] = null;
-            }
-            curl_multi_remove_handle($mh, $ch);
-        }
-        // close
-        curl_multi_close($mh);
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $combinationsUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
+                $response = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
 
-    }
-
-
-    public function updateWCVariation($variations,$holooProducts,$config){
-        //return;
-        $user=auth()->user();
-        ini_set('max_execution_time', 0); // 120 (seconds) = 2 Minutes
-        set_time_limit(0);
-        foreach ($variations as $wcId){
-
-            $wcProducts=$this->get_variation_product($wcId);
-            foreach ($wcProducts as $WCProd) {
-                if (count($WCProd->meta_data)>0) {
-
-                    $wcHolooCode = $this->findKey($WCProd->meta_data,'_holo_sku');
-                    if ($wcHolooCode) {
-
-                        $productFind = false;
-                        foreach ($holooProducts as $key=>$HolooProd) {
-                            //if( array_search($key, $notneedtoProsse)) continue;
-
-                            $HolooProd=(object) $HolooProd;
-                            if ($wcHolooCode == $HolooProd->a_Code) {
-
-                                $productFind = true;
-                                $wholesale_customer_wholesale_price= $this->findKey($WCProd->meta_data,'wholesale_customer_wholesale_price');
-
-                                if (
-                                isset($config->update_product_price) && $config->update_product_price=="1" &&
-                                (
-                                (isset($config->sales_price_field) && (int)$WCProd->regular_price != $this->get_price_type($config->sales_price_field,$HolooProd)) or
-                                (isset($config->special_price_field) && (int)$WCProd->sale_price  != $this->get_price_type($config->special_price_field,$HolooProd)) or
-                                (isset($config->wholesale_price_field) && (int)$wholesale_customer_wholesale_price  != $this->get_price_type($config->wholesale_price_field,$HolooProd))
-                                ) or
-                                ((isset($config->update_product_stock) && $config->update_product_stock=="1") &&  isset($WCProd->stock_quantity)  and $WCProd->stock_quantity != $this->get_exist_type($config->product_stock_field,$HolooProd)) or
-                                ((isset($config->update_product_name) && $config->update_product_name=="1") && $WCProd->name != trim($this->arabicToPersian($HolooProd->name)))
-
-                                ){
-
-
-                                    $data = [
-                                        'id' => $wcId ,
-                                        'variation_id' => $WCProd->id,
-
-                                        'regular_price' => (isset($config->update_product_price) && $config->update_product_price=="1") && ((int)$WCProd->regular_price != $this->get_price_type($config->sales_price_field,$HolooProd)) ? $this->get_price_type($config->sales_price_field,$HolooProd) : (int)$WCProd->regular_price,
-                                        'price' => (isset($config->update_product_price) && $config->update_product_price=="1") && ((int)$WCProd->sale_price != $this->get_price_type($config->special_price_field,$HolooProd)) ? $this->get_price_type($config->special_price_field,$HolooProd)  :(int)$WCProd->sale_price,
-                                        'sale_price' => (isset($config->update_product_price) && $config->update_product_price=="1") && ((int)$WCProd->sale_price != $this->get_price_type($config->special_price_field,$HolooProd)) ? $this->get_price_type($config->special_price_field,$HolooProd)  :(int)$WCProd->sale_price,
-                                        'wholesale_customer_wholesale_price' => (isset($config->update_product_price) && $config->update_product_price=="1") && (isset($wholesale_customer_wholesale_price) && (int)$wholesale_customer_wholesale_price != $this->get_price_type($config->wholesale_price_field,$HolooProd)) ? $this->get_price_type($config->wholesale_price_field,$HolooProd)  : ((isset($wholesale_customer_wholesale_price)) ? (int)$wholesale_customer_wholesale_price : null),
-                                        'stock_quantity' => (isset($config->update_product_stock) && $config->update_product_stock=="1" and isset($WCProd->stock_quantity)) ? $this->get_exist_type($config->product_stock_field,$HolooProd) : 0,
-                                    ];
-                                    log::info("add new update product to queue for product variation");
-                                    log::info("for website id : ".$user->siteUrl);
-
-                                    UpdateProductsVariationUser::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret],$data,$wcHolooCode)->onConnection($user->queue_server)->onQueue("high");
-
-
-                                    $notneedtoProsse[]=$key;
-
-
-
-                                }
-                                else{
-                                    $notneedtoProsse[]=$key;
-
-                                }
-                            }
-
-                        }
-
-
-                    }
-
+                if ($httpCode >= 400) {
+                    throw new \Exception("Failed to fetch combinations for product ID: {$productId}. HTTP Code: {$httpCode}");
                 }
-            }
-        }
 
+                $combinations = json_decode($response, true)['combinations'] ?? [];
 
-    }
+                foreach ($combinations as $combination) {
+                    $combinationId = $combination['id'];
+                    $stockAvailableId = $combination['id_stock_available'];
+                    $reference = $combination['reference'];
 
-    public function getVariationProductWithHoloo($holooCode,$WCProd,$holooProducts,$config){
-        $user=auth()->user();
-        ini_set('max_execution_time', 0); // 120 (seconds) = 2 Minutes
-        set_time_limit(0);
-        $wcId=$WCProd->id;
-        //foreach ($variations as $wcId){
+                    $productFind = false;
+                    foreach ($holooProducts as $key => $HolooProd) {
+                        $HolooProd = (object)$HolooProd;
 
-            $wcProducts=$this->get_variation_product($wcId);
-            // if($user->id==10 and $wcId==10555){
-            //     dd($wcProducts);
-            // }
-            //$wcProducts=$wcProducts[0];
-            if (!$wcProducts) return;
-
-            foreach ($wcProducts as $WCProd) {
-
-                if (count($WCProd->meta_data)>0) {
-
-                    $wcHolooCode = $this->findKey($WCProd->meta_data,'_holo_sku');
-                    if ($wcHolooCode) {
-
-                        $productFind = false;
-                        //$HolooProd=$holooProducts->data->product;
-                        $HolooProd=$holooProducts;
-
-                        $holooCode=$HolooProd->a_Code;
-
-                        if ($wcHolooCode === $holooCode) {
-
-                            // log::info("holo ".json_encode($HolooProd));
-                            // log::info("wp ".json_encode($WCProd));
+                        if ($reference == $HolooProd->a_Code) {
                             $productFind = true;
-                            $wholesale_customer_wholesale_price= $this->findKey($WCProd->meta_data,'wholesale_customer_wholesale_price');
 
-                            if (
-                            isset($config->update_product_price) && $config->update_product_price=="1" &&
-                            (
-                            (isset($config->sales_price_field) && (int)$WCProd->regular_price != $this->get_price_type($config->sales_price_field,$HolooProd)) or
-                            (isset($config->special_price_field) && (int)$WCProd->sale_price  != $this->get_price_type($config->special_price_field,$HolooProd)) or
-                            (isset($config->wholesale_price_field) && (int)$wholesale_customer_wholesale_price  != $this->get_price_type($config->wholesale_price_field,$HolooProd))
-                            ) or
-                            ((isset($config->update_product_stock) && $config->update_product_stock=="1") &&  isset($WCProd->stock_quantity)  and $WCProd->stock_quantity != $this->get_exist_type($config->product_stock_field,$HolooProd)) or
-                            ((isset($config->update_product_name) && $config->update_product_name=="1") && $WCProd->name != trim($this->arabicToPersian($HolooProd->name)))
+                            // قیمت و موجودی جدید
+                            $newPrice = isset($config->update_product_price) && $config->update_product_price == "1"
+                                ? $this->get_price_type($config->sales_price_field, $HolooProd)
+                                : $combination['price'];
 
-                            ){
+                            $newQuantity = isset($config->update_product_stock) && $config->update_product_stock == "1"
+                                ? $this->get_exist_type($config->product_stock_field, $HolooProd)
+                                : 0;
 
+                            // به‌روزرسانی قیمت ترکیب
+                            $updateCombinationUrl = "{$apiUrl}/api/combinations/{$combinationId}";
+                            $updateCombinationData = [
+                                'combination' => [
+                                    'price' => $newPrice
+                                ]
+                            ];
 
-                                $data = [
-                                    'id' => $wcId ,
-                                    'variation_id' => $WCProd->id,
-                                    'regular_price' => (isset($config->update_product_price) && $config->update_product_price=="1") && ((int)$WCProd->regular_price != $this->get_price_type($config->sales_price_field,$HolooProd)) ? $this->get_price_type($config->sales_price_field,$HolooProd) : (int)$WCProd->regular_price,
-                                    'price' => (isset($config->update_product_price) && $config->update_product_price=="1") && ((int)$WCProd->sale_price != $this->get_price_type($config->special_price_field,$HolooProd)) ? $this->get_price_type($config->special_price_field,$HolooProd)  :(int)$WCProd->sale_price,
-                                    'sale_price' => (isset($config->update_product_price) && $config->update_product_price=="1") && ((int)$WCProd->sale_price != $this->get_price_type($config->special_price_field,$HolooProd)) ? $this->get_price_type($config->special_price_field,$HolooProd)  :(int)$WCProd->sale_price,
-                                    'wholesale_customer_wholesale_price' => (isset($config->update_product_price) && $config->update_product_price=="1") && (isset($wholesale_customer_wholesale_price) && (int)$wholesale_customer_wholesale_price != $this->get_price_type($config->wholesale_price_field,$HolooProd)) ? $this->get_price_type($config->wholesale_price_field,$HolooProd)  : ((isset($wholesale_customer_wholesale_price)) ? (int)$wholesale_customer_wholesale_price : null),
-                                    'stock_quantity' => (isset($config->update_product_stock) && $config->update_product_stock=="1" and isset($WCProd->stock_quantity)) ? $this->get_exist_type($config->product_stock_field,$HolooProd) : 0
-                                ];
-                                log::info("add new update product to queue for product variation");
-                                log::info("for website id : ".$user->siteUrl);
+                            $this->sendPUTRequest($updateCombinationUrl, $updateCombinationData, $headers);
 
-                                UpdateProductsVariationUser::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret],$data,$wcHolooCode)->onConnection($user->queue_server)->onQueue("high");
+                            // به‌روزرسانی موجودی ترکیب
+                            $updateStockUrl = "{$apiUrl}/api/stock_availables/{$stockAvailableId}";
+                            $updateStockData = [
+                                'stock_available' => [
+                                    'quantity' => $newQuantity
+                                ]
+                            ];
 
+                            $this->sendPUTRequest($updateStockUrl, $updateStockData, $headers);
 
-                            }
-                            return $WCProd;
+                            Log::info("Updated combination ID {$combinationId} for product ID {$productId}");
                         }
-
                     }
 
+                    if (!$productFind) {
+                        Log::info("Combination with reference {$reference} not found in Holoo products.");
+                    }
                 }
             }
-        //}
+        } catch (\Exception $e) {
+            Log::error("An error occurred while updating Prestashop variations: " . $e->getMessage());
+        }
+    }
+
+    private function sendPUTRequest($url, $data, $headers)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array_merge($headers, ['Content-Type: application/json']));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 400) {
+            throw new \Exception("Failed to send PUT request to {$url}. HTTP Code: {$httpCode}");
+        }
+
+        return $response;
     }
 
     public function updateConfig(Request $request){
@@ -1929,12 +1523,10 @@ class WCController extends Controller
         return $this->sendResponse('بروزرسانی تنظیمات با موفقیت دریافت شد ', Response::HTTP_OK, ["result"=>["msg_code"=>0]]);
     }
 
-
     public function self_config(){
         $user=auth()->user();
         return $this->getWcConfig();
     }
-
 
     private function get_exist_type($exist_field,$HolooProd){
         // "sales_price_field": "1",
@@ -1954,89 +1546,63 @@ class WCController extends Controller
             else return (int)(float) $HolooProd->fewTak;
         }
     }
+    public function updatePSMultiProduct($params)
+    {
+        $apiUrl = env('API_URL'); // URL پایه API پرستاشاپ
+        $apiKey = env('API_KEY'); // کلید API پرستاشاپ
 
+        $headers = [
+            'Authorization: Basic ' . base64_encode($apiKey . ':'),
+            'Content-Type: application/json'
+        ];
 
-    /*
-     * Update Multi Product
-     */
-    public function updateWCMultiProduct($params){
-        $user=auth()->user();
-        $curl = curl_init();
-        $products=[];
-        $failer=[];
+        $products = [];
+        $failures = [];
 
-        foreach($params as $param){
-
-            $meta = array(
-                (object)array(
-                    'key' => 'wholesale_customer_wholesale_price',
-                    'value' => $param["wholesale_customer_wholesale_price"]
-                )
-            );
-            $products[]=(object)[
-                "id" => (string)$param['id'],
-                "regular_price"=>(string)$param['regular_price'],
-                "price"=>((int)$param['price']==0) ? "" : (string) $param['price'],
-                "sale_price"=>((int)$param['sale_price']==0) ? "" : (string) $param['sale_price'] ,
-                //"wholesale_customer_wholesale_price"=>$params['wholesale_customer_wholesale_price'],
-                "stock_quantity"=>(int)$param['stock_quantity'],
-                "name"=>$param['name'],
-                "meta_data"=>$meta,
+        foreach ($params as $param) {
+            $products[] = [
+                'id' => (string)$param['id'],
+                'price' => (float)$param['price'],
+                'quantity' => (int)$param['stock_quantity'],
+                'name' => $param['name'],
             ];
         }
 
-        $data=[
-            "update"=>$products
+        $data = [
+            'products' => $products
         ];
-        $data = json_encode($data);
-        log::info($data);
-        log::info('update multi product');
 
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "{$apiUrl}/api/products/batch");
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $user->siteUrl.'/wp-json/wc/v3/products/batch',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'PUT',
-            CURLOPT_USERAGENT => 'Holoo',
-            CURLOPT_POSTFIELDS => $data,
-            CURLOPT_USERPWD => $user->consumerKey. ":" . $user->consumerSecret,
-            CURLOPT_HTTPHEADER => array(
-              //'Content-Type: multipart/form-data',
-              'Content-Type: application/json',
-            ),
-        ));
-        $responses = curl_exec($curl);
-        $httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-
-        $responses = json_decode($responses);
-        if (!isset($responses->update)){
-            log::info(json_encode($responses));
-            log::warning("get http code ".$httpcode." But no amount returned for user: ".$user->id);
-            log::warning("Probably, none of the product codes in this request are available in the user's WooCommerce");
-            return $failer;
-        }
-        foreach($responses->update as $response){
-
-
-            if(isset($response->error)){
-                log::info(json_encode($responses));
-                $this->recordLog('update single product has error return is ',json_encode($response));
-                log::warning("get http code ".$httpcode." for ".$response->id." for user: ".$user->id);
-                $failer[]=$response->id;
+            if ($httpCode >= 400) {
+                throw new \Exception("Failed to update products. HTTP Code: {$httpCode}");
             }
-            else{
-                log::info('update single product succsessfuly for wc product id '.$response->id.' for user id '.$user->id);
+
+            $responseDecoded = json_decode($response, true);
+            foreach ($responseDecoded['products'] as $product) {
+                if (isset($product['error'])) {
+                    Log::warning("Failed to update product ID: " . $product['id']);
+                    $failures[] = $product['id'];
+                } else {
+                    Log::info("Successfully updated product ID: " . $product['id']);
+                }
             }
+        } catch (\Exception $e) {
+            Log::error("An error occurred while updating Prestashop products: " . $e->getMessage());
         }
-        curl_close($curl);
-        return $failer;
-        //$this->sendResponse('محصول به روز شد', Response::HTTP_OK, ['res' => $response]);
+
+        return $failures;
     }
 
     public function reMapHolooProduct($holooProducts){
@@ -2125,6 +1691,135 @@ class WCController extends Controller
         return $newHolooProducts;
     }
 
+    public function getPSProductVariations($productId){
+        $apiUrl = env('API_URL'); // URL پایه API پرستاشاپ
+        $apiKey = env('API_KEY'); // کلید API پرستاشاپ
+
+        $headers = [
+            'Authorization: Basic ' . base64_encode($apiKey . ':'),
+            'Content-Type: application/json'
+        ];
+
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "{$apiUrl}/api/combinations?filter[id_product]={$productId}&display=full");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode >= 400) {
+                throw new \Exception("Failed to fetch variations for product ID: {$productId}. HTTP Code: {$httpCode}");
+            }
+
+            $responseData = json_decode($response, true);
+
+            if (!isset($responseData['combinations']) || empty($responseData['combinations'])) {
+                Log::info("No variations found for product ID: {$productId}");
+                return [];
+            }
+
+            return $responseData['combinations'];
+        } catch (\Exception $e) {
+            Log::error("Error fetching variations for product ID: {$productId} - " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function updatePSVariationMultiProductWithHoloo($PSProd, $holooProducts, $config)
+    {
+        $apiUrl = env('API_URL'); // URL پایه API پرستاشاپ
+        $apiKey = env('API_KEY'); // کلید API پرستاشاپ
+
+        $headers = [
+            'Authorization: Basic ' . base64_encode($apiKey . ':'),
+            'Content-Type: application/json'
+        ];
+
+        $failures = [];
+        $productId = $PSProd['id'];
+
+        $variations = $this->getPSProductVariations($productId);
+
+        if (empty($variations)) {
+            Log::info("No variations found for PS product ID {$productId}");
+            return;
+        }
+
+        foreach ($variations as $variation) {
+            $psReference = $variation['reference'];
+
+            if (!$psReference || !array_key_exists((string)$psReference, $holooProducts)) {
+                Log::warning("Holoo code not found or invalid for variation ID: {$variation['id']} in product ID: {$productId}");
+                continue;
+            }
+
+            $holooProduct = $holooProducts[(string)$psReference];
+
+            $updateRequired = false;
+            $data = [
+                'id' => $variation['id'],
+            ];
+
+            // بررسی قیمت‌ها
+            if (isset($config->update_product_price) && $config->update_product_price == "1") {
+                $newPrice = $this->get_price_type($config->sales_price_field, $holooProduct);
+                if ((float)$variation['price'] != $newPrice) {
+                    $data['price'] = $newPrice;
+                    $updateRequired = true;
+                }
+            }
+
+            // بررسی موجودی انبار
+            if (isset($config->update_product_stock) && $config->update_product_stock == "1") {
+                $newStock = $this->get_exist_type($config->product_stock_field, $holooProduct);
+                if ((int)$variation['quantity'] != $newStock) {
+                    $data['quantity'] = $newStock;
+                    $updateRequired = true;
+                }
+            }
+
+            // بررسی نام محصول
+            if (isset($config->update_product_name) && $config->update_product_name == "1") {
+                $newName = trim($this->arabicToPersian($holooProduct['name']));
+                if ($variation['name'] != $newName) {
+                    $data['name'] = $newName;
+                    $updateRequired = true;
+                }
+            }
+
+            if ($updateRequired) {
+                try {
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, "{$apiUrl}/api/combinations/{$variation['id']}");
+                    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['combination' => $data]));
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+                    $response = curl_exec($ch);
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+
+                    if ($httpCode >= 400) {
+                        throw new \Exception("Failed to update variation ID: {$variation['id']}. HTTP Code: {$httpCode}");
+                    }
+
+                    Log::info("Successfully updated variation ID: {$variation['id']} for product ID: {$productId}");
+                } catch (\Exception $e) {
+                    Log::error("Error updating variation ID: {$variation['id']} - " . $e->getMessage());
+                    $failures[] = $variation['id'];
+                }
+            }
+        }
+
+        return $failures;
+    }
+
     public function getVariationMultiProductWithHoloo($WCProd,$holooProducts,$config){
         $user=auth()->user();
         ini_set('max_execution_time', 0); // 120 (seconds) = 2 Minutes
@@ -2199,6 +1894,84 @@ class WCController extends Controller
             }
         }
 
+    }
+
+    public function getPSVariationMultiProductWithHolooPoshak($PSProd, $holooProducts, $config)
+    {
+        $apiUrl = env('API_URL'); // URL پایه API پرستاشاپ
+        $apiKey = env('API_KEY'); // کلید API پرستاشاپ
+
+        $headers = [
+            'Authorization: Basic ' . base64_encode($apiKey . ':'),
+            'Content-Type: application/json'
+        ];
+
+        $user = auth()->user();
+        $productId = $PSProd['id'];
+
+        $variations = $this->getPSProductVariations($productId);
+
+        if (empty($variations)) {
+            Log::info("No variations found for PS product ID {$productId} (User ID: {$user->id})");
+            return;
+        }
+
+        foreach ($variations as $variation) {
+            $psReference = $variation['reference'];
+
+            if (!$psReference || !array_key_exists((string)$psReference, $holooProducts)) {
+                Log::warning("Holoo code not found for variation ID: {$variation['id']} in product ID: {$productId} (User ID: {$user->id})");
+                continue;
+            }
+
+            $holooProduct = $holooProducts[(string)$psReference];
+
+            $updateRequired = false;
+            $data = [
+                'id' => $productId,
+                'variation_id' => $variation['id'],
+            ];
+
+            // بررسی قیمت‌ها
+            if (isset($config->update_product_price) && $config->update_product_price == "1") {
+                $newPrice = $this->get_price_type($config->sales_price_field, $holooProduct);
+                if ((float)$variation['price'] != $newPrice) {
+                    $data['price'] = $newPrice;
+                    $data['regular_price'] = $newPrice; // می‌توان بر اساس نیاز تنظیم کرد
+                    $updateRequired = true;
+                }
+            }
+
+            // بررسی موجودی انبار
+            if (isset($config->update_product_stock) && $config->update_product_stock == "1") {
+                $newStock = $holooProduct['few'];
+                if ((int)$variation['quantity'] != $newStock) {
+                    $data['stock_quantity'] = $newStock;
+                    $updateRequired = true;
+                }
+            }
+
+            // بررسی نام محصول
+            if (isset($config->update_product_name) && $config->update_product_name == "1") {
+                $newName = trim($this->arabicToPersian($holooProduct['name']));
+                if ($variation['name'] != $newName) {
+                    $data['name'] = $newName;
+                    $updateRequired = true;
+                }
+            }
+
+            if ($updateRequired) {
+                Log::info("Adding variation ID: {$variation['id']} for update (Product ID: {$productId}, User ID: {$user->id})");
+
+                UpdateProductsVariationUser::dispatch((object)[
+                    "queue_server" => $user->queue_server,
+                    "id" => $user->id,
+                    "siteUrl" => $user->siteUrl,
+                    "consumerKey" => $user->consumerKey,
+                    "consumerSecret" => $user->consumerSecret,
+                ], $data, $psReference)->onConnection($user->queue_server)->onQueue("high");
+            }
+        }
     }
 
     public function getVariationMultiProductWithHolooPoshak($WCProd,$holooProducts,$config){
@@ -2350,184 +2123,101 @@ class WCController extends Controller
             "token"=>$user->cloudToken,
         ],
         $user->cloudToken)->onConnection($user->queue_server)->onQueue("poshak");
-        // $holooProp=$this->getPooshakProps();
-        // $WcProp = $this->getWcAtterbiute();
-        // $curl = curl_init();
 
-        // foreach($holooProp as $key=>$values){
-        //     #echo $value;
-        //     #check key exist in array
-        //     if(array_key_exists($key,$WcProp)){
-        //         foreach($values as $keyValue=>$value){
-        //             if(in_array($value ,$WcProp[$key]["value"])){
-
-        //                 continue;
-        //             }
-        //             else{
-        //                 log::info($WcProp[$key]["id"]);
-        //                 #print_r($value);
-        //                 #echo $WcProp[$key]["id"];
-        //                 curl_setopt_array($curl, array(
-        //                   CURLOPT_URL => $user->siteUrl.'/wp-json/wc/v3/products/attributes/'.$WcProp[$key]["id"].'/terms',
-        //                   CURLOPT_RETURNTRANSFER => true,
-        //                   CURLOPT_ENCODING => '',
-        //                   CURLOPT_MAXREDIRS => 10,
-        //                   CURLOPT_TIMEOUT => 0,
-        //                   CURLOPT_FOLLOWLOCATION => true,
-        //                   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        //                   CURLOPT_CUSTOMREQUEST => 'POST',
-        //                   CURLOPT_POSTFIELDS => array('name' => $value),
-        //                   CURLOPT_USERAGENT => 'Holoo',
-        //                   CURLOPT_USERPWD => $user->consumerKey. ":" . $user->consumerSecret,
-        //                 ));
-
-        //                 $response = curl_exec($curl);
-
-        //                 //print_r($response);
-        //                 // break;
-        //             }
-
-        //         }
-        //     }
-        //     else{
-
-        //         foreach($values as $keyValue=>$value){
-        //             if(strlen($key)<=28){
-
-        //                 curl_setopt_array($curl, array(
-        //                   CURLOPT_URL => $user->siteUrl.'/wp-json/wc/v3/products/attributes',
-        //                   CURLOPT_RETURNTRANSFER => true,
-        //                   CURLOPT_ENCODING => '',
-        //                   CURLOPT_MAXREDIRS => 10,
-        //                   CURLOPT_TIMEOUT => 0,
-        //                   CURLOPT_FOLLOWLOCATION => true,
-        //                   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        //                   CURLOPT_CUSTOMREQUEST => 'POST',
-        //                   CURLOPT_POSTFIELDS => array('name' => $key),
-        //                   CURLOPT_USERAGENT => 'Holoo',
-        //                   CURLOPT_USERPWD => $user->consumerKey. ":" . $user->consumerSecret,
-        //                 ));
-
-        //                 $response = curl_exec($curl);
-        //                 $attributes= json_decode($response);
-        //                 // if($attributes);
-        //                 // break;
-        //                 curl_setopt_array($curl, array(
-        //                   CURLOPT_URL => $user->siteUrl.'/wp-json/wc/v3/products/attributes/'.$attributes->id.'/terms',
-        //                   CURLOPT_RETURNTRANSFER => true,
-        //                   CURLOPT_ENCODING => '',
-        //                   CURLOPT_MAXREDIRS => 10,
-        //                   CURLOPT_TIMEOUT => 0,
-        //                   CURLOPT_FOLLOWLOCATION => true,
-        //                   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        //                   CURLOPT_CUSTOMREQUEST => 'POST',
-        //                   CURLOPT_POSTFIELDS => array('name' => $value),
-        //                   CURLOPT_USERAGENT => 'Holoo',
-        //                   CURLOPT_USERPWD => $user->consumerKey. ":" . $user->consumerSecret,
-        //                 ));
-
-        //                 $response = curl_exec($curl);
-        //             }
-        //             else{
-        //                 log::warning("feature ".$key." not set");
-        //                 log::warning("To register a feature in WordPress, the feature name must be less than 28 characters");
-        //             }
-        //         }
-
-
-
-        //     }
-        // }
 
     }
 
-    public function getWcAtterbiute(){
-        $user=auth()->user();
+    public function getPSAttributes()
+    {
+        $apiUrl = env('API_URL'); // URL پایه API پرستاشاپ
+        $apiKey = env('API_KEY'); // کلید API پرستاشاپ
 
+        $headers = [
+            'Authorization: Basic ' . base64_encode($apiKey . ':'),
+            'Content-Type: application/json'
+        ];
 
-        $curl = curl_init();
-        ///wc/v3/products/:product_id/variations?
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $user->siteUrl.'/wp-json/wc/v3/products/attributes',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_USERAGENT => 'Holoo',
-            CURLOPT_USERPWD => $user->consumerKey. ":" . $user->consumerSecret,
-        ));
-        $parent=[];
-        $response = curl_exec($curl);
-        if ($response) {
-            $attributes= json_decode($response);
-            foreach($attributes as $key=>$value){
-                $parent[$value->name]["id"]=$value->id;
-                $parent[$value->name]["value"]=$this->getAllTerms($value->id);
+        $attributes = [];
+
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "{$apiUrl}/api/attributes");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode >= 400) {
+                throw new \Exception("Failed to fetch attributes. HTTP Code: {$httpCode}");
             }
 
+            $attributesData = new \SimpleXMLElement($response);
 
+            foreach ($attributesData->attributes->attribute as $attribute) {
+                $id = (int)$attribute->id;
+                $name = (string)$attribute->name->language;
+
+                $attributes[$name]['id'] = $id;
+                $attributes[$name]['values'] = $this->getAttributeValues($id);
+            }
+        } catch (\Exception $e) {
+            Log::error("Error fetching attributes: " . $e->getMessage());
         }
-        curl_close($curl);
 
-        return $parent;
+        return $attributes;
     }
 
-    private function getAllTerms($id){
-        $user=auth()->user();
+    private function getAttributeValues($attributeId)
+    {
+        $apiUrl = env('API_URL'); // URL پایه API پرستاشاپ
+        $apiKey = env('API_KEY'); // کلید API پرستاشاپ
 
+        $headers = [
+            'Authorization: Basic ' . base64_encode($apiKey . ':'),
+            'Content-Type: application/json'
+        ];
 
+        $values = [];
 
-        $curl = curl_init();
-        ///wc/v3/products/:product_id/variations?
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $user->siteUrl.'/wp-json/wc/v3/products/attributes/'.$id.'/terms',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_USERAGENT => 'Holoo',
-            CURLOPT_USERPWD => $user->consumerKey. ":" . $user->consumerSecret,
-        ));
-        $parent=[];
-        $response = curl_exec($curl);
-        #print_r($response);
-        if ($response) {
-            $terms= json_decode($response);
-            if($terms!=null){
-                foreach($terms as $key=>$values){
-                    $parent[]=$values->name;
-                }
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "{$apiUrl}/api/attribute_values?filter[id_attribute]={$attributeId}");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode >= 400) {
+                throw new \Exception("Failed to fetch attribute values for attribute ID: {$attributeId}. HTTP Code: {$httpCode}");
             }
 
+            $valuesData = new \SimpleXMLElement($response);
+
+            foreach ($valuesData->attribute_values->attribute_value as $value) {
+                $values[] = [
+                    'id' => (int)$value->id,
+                    'name' => (string)$value->name->language,
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error("Error fetching attribute values for attribute ID: {$attributeId} - " . $e->getMessage());
         }
-        return $parent;
+
+        return $values;
     }
+
     private function variableOptions($cluster){
 
 
         $rootParentNameTree=explode("/",$this->arabicToPersian($cluster->rootParentNameTree));
         return $rootParentNameTree;
 
-    }
-    private function getParentsPoshakCode($HolooIDs){
-
-        $unicHolooID=[];
-        $result = [];
-        foreach ($HolooIDs as $part) {
-            // جدا سازی کد و قسمت بعد از -
-            $code = explode('-', $part)[0];
-            // اضافه کردن کد به نتیجه نهایی در صورتی که تکراری نباشد
-            if (!in_array($code, $result)) {
-                $result[] = $code;
-                $unicHolooID[] = $part;
-            }
-        }
-
-        return $unicHolooID;
     }
 
     private function getAllParentChildCode($HolooID,$HolooProducts){
@@ -2560,7 +2250,6 @@ class WCController extends Controller
 
         return $this->sendResponse('تخلیه صف با موفقیت انجام شد', Response::HTTP_OK,[]);
     }
-
 
     public function getProductsWithQuantities(){
         // URL و API Key از فایل env خوانده می‌شوند
@@ -2647,8 +2336,5 @@ class WCController extends Controller
             ], 500);
         }
     }
-
-
-
 
 }
