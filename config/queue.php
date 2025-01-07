@@ -62,16 +62,32 @@ return [
             'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
             'after_commit' => false,
         ],
-
         'redis' => [
             'driver' => 'redis',
-            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
-            'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            'connection' => 'default',
+            'queue' => 'default',
+            'expire' => 60,
+            'retry_after' => 3600,
             'block_for' => null,
+            'tries' => 1
+        ],
+        'server_2' => [
+            'driver' => 'redis',
+            'connection' => 'server_2',
+            'queue' => 'medium',
+            'expire' => 60,
+            'retry_after' => 3600,
+            'block_for' => null,
+            'tries' => 1
+        ],
+        'server_1' => [
+            'driver' => 'database',
+            'connection' => 'cloud1',
+            'table' => 'jobs',
+            'queue' => 'default',
+            'retry_after' => 90,
             'after_commit' => false,
         ],
-
     ],
 
     /*

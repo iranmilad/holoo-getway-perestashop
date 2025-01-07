@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\HolooController;
 use App\Http\Controllers\PshopController;
 use App\Http\Controllers\API\AuthController;
 
@@ -14,10 +15,10 @@ Route::group([
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:api');
     Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
     Route::post('/profile', [AuthController::class, 'profile'])->middleware('auth:api');
-
+    Route::post('/wcInvoicePayed', [HolooController::class, 'wcInvoicePayed'])->middleware('auth:api');
     Route::get('/getProductsWithQuantities', [PshopController::class, 'getProductsWithQuantities']);
     Route::get('/test', [PshopController::class, 'getLanguages']);
-
+    Route::post('/updateAllProductFromHolooToWC', [PshopController::class, 'updateAllProductFromHolooToWC3'])->middleware('auth:api');
 });
 
 Route::post('/webhook', [PshopController::class, 'holooWebHookPrestaShop']);

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use stdClass;
-use Carbon\Carbon;
+
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Exports\ReportExport;
@@ -18,6 +18,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\VarDumper\Cloner\Data;
 use Symfony\Component\HttpFoundation\Response;
 use App\Jobs\UpdateProductsVariationUser;
+use Carbon\Carbon;
 
 
 class HolooController extends Controller
@@ -29,12 +30,12 @@ class HolooController extends Controller
 
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
-
         if ($user->cloudTokenExDate > Carbon::now() and $force == false) {
 
             return $user->cloudToken;
         }
         else {
+
 
 
             $curl = curl_init();
@@ -46,6 +47,7 @@ class HolooController extends Controller
                 CURLOPT_TIMEOUT => 0,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_CUSTOMREQUEST => 'POST',
                 CURLOPT_POSTFIELDS => array('Serial' => $userSerial, 'RefreshToken' => 'false', 'DeleteService' => 'false', 'MakeService' => 'true', 'RefreshKey' => 'false'),
                 CURLOPT_HTTPHEADER => array(
@@ -54,8 +56,15 @@ class HolooController extends Controller
             ));
 
             $response = curl_exec($curl);
+
             curl_close($curl);
             $response = json_decode($response);
+            //get error http $response code and log it
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+
+
+
 
             if ($response and isset($response->success) and $response->success == true) {
                 log::info("take new token request and response");
@@ -90,6 +99,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
                 'Authorization: Bearer ' . $this->getNewToken(),
@@ -178,6 +188,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -196,6 +207,7 @@ class HolooController extends Controller
                 CURLOPT_TIMEOUT => 0,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_CUSTOMREQUEST => 'GET',
                 CURLOPT_HTTPHEADER => array(
                     'serial: ' . $user->serial,
@@ -222,6 +234,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -261,6 +274,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -287,6 +301,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -306,6 +321,7 @@ class HolooController extends Controller
                 CURLOPT_TIMEOUT => 0,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_CUSTOMREQUEST => 'GET',
                 CURLOPT_HTTPHEADER => array(
                     'serial: ' . $user->serial,
@@ -339,6 +355,7 @@ class HolooController extends Controller
                     CURLOPT_TIMEOUT => 0,
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_CUSTOMREQUEST => 'GET',
                     CURLOPT_HTTPHEADER => array(
                         'serial: ' . $user->serial,
@@ -386,6 +403,7 @@ class HolooController extends Controller
                     CURLOPT_TIMEOUT => 0,
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_CUSTOMREQUEST => 'GET',
                     CURLOPT_HTTPHEADER => array(
                         'serial: ' . $user->serial,
@@ -430,6 +448,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -696,6 +715,7 @@ class HolooController extends Controller
                     CURLOPT_TIMEOUT => 0,
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_CUSTOMREQUEST => 'POST',
                     CURLOPT_POSTFIELDS => array('data' => json_encode($data)),
                     CURLOPT_HTTPHEADER => array(
@@ -738,7 +758,8 @@ class HolooController extends Controller
 
     public function wcInvoicePayed(Request $orderInvoice)
     {
-        $user = auth()->user();
+        $user = User::first();
+        auth()->login($user);
         $config = $user->config;
         $config = json_decode($config);
         $invoice=null;
@@ -759,9 +780,14 @@ class HolooController extends Controller
 
         if (isset($config->save_sale_invoice) and $config->save_sale_invoice != "0") {
 
+
             $_data = (object) $orderInvoice->input("created_at");
-            $DateString = Carbon::parse(now(), $_data->timezone);
-            $DateString->setTimezone('Asia/Tehran');
+
+            // اطمینان از وجود مقدار `timezone` در داده‌ها
+            $timezone = $_data->timezone ?? 'UTC'; // مقدار پیش‌فرض اگر `timezone` تعریف نشده باشد
+
+            // تبدیل تاریخ جاری به منطقه زمانی مورد نظر
+            $DateString = Carbon::now($timezone)->setTimezone('Asia/Tehran');
 
             if (!$config->save_sale_invoice || $config->save_sale_invoice == 0) {
 
@@ -774,12 +800,12 @@ class HolooController extends Controller
                 return $this->sendResponse('ثبت فاکتور انجام نشد.روش پرداخت در پلاگین نامعتبر', Response::HTTP_GATEWAY_TIMEOUT, ["result" => ["msg_code" => 0]]);
             }
 
-            if (!isset($payment->{$orderInvoice->payment_method})){
+            if (!isset($config->payment->{$orderInvoice->payment_method})){
                 $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
                 return $this->sendResponse('ثبت فاکتور انجام نشد.روش پرداخت در پلاگین نامعتبر',  Response::HTTP_GATEWAY_TIMEOUT, ["result" => ["msg_code" => 0]]);
             }
 
-            $payment = $payment->{$orderInvoice->payment_method};
+            $payment = $config->payment->{$orderInvoice->payment_method};
 
             $customerBilling= (object)$orderInvoice->customer;
             if(!isset($customerBilling->phone)){
@@ -788,7 +814,7 @@ class HolooController extends Controller
             }
 
             if($user->fix_customer_account==false)
-                $custid = $this->getHolooCustomerID($orderInvoice->customer, $customerBilling->name);
+                $custid = $this->getHolooCustomerID($orderInvoice->customer, $customerBilling->id);
             else{
                 $custid =$user->customer_account;
             }
@@ -815,8 +841,8 @@ class HolooController extends Controller
                     $item = (object) $item;
                 }
 
-                if (isset($item->meta_data)) {
-                    $HoloID=$item->meta_data->product_reference;
+                if (isset($item->product_reference)) {
+                    $HoloID=$item->product_reference;
                     $HoloID=str_replace("\r\n","",$HoloID);
                     if($HoloID){
 
@@ -930,6 +956,7 @@ class HolooController extends Controller
                     CURLOPT_TIMEOUT => 0,
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_CUSTOMREQUEST => 'POST',
                     CURLOPT_POSTFIELDS => array('data' => json_encode($data)),
                     CURLOPT_HTTPHEADER => array(
@@ -1036,6 +1063,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_POSTFIELDS => array('data' => json_encode($data)),
             CURLOPT_HTTPHEADER => array(
@@ -1087,6 +1115,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $userSerial,
@@ -1135,6 +1164,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $userSerial,
@@ -1183,6 +1213,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $userSerial,
@@ -1228,6 +1259,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $userSerial,
@@ -1257,6 +1289,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $userSerial,
@@ -1301,6 +1334,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $userSerial,
@@ -1351,6 +1385,7 @@ class HolooController extends Controller
                 CURLOPT_TIMEOUT => 0,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_CUSTOMREQUEST => 'GET',
                 CURLOPT_HTTPHEADER => array(
                     'serial: ' . $userSerial,
@@ -1401,6 +1436,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $userSerial,
@@ -1442,6 +1478,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $userSerial,
@@ -1659,6 +1696,7 @@ class HolooController extends Controller
                     CURLOPT_TIMEOUT => 0,
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_CUSTOMREQUEST => 'GET',
                     CURLOPT_HTTPHEADER => array(
                         'serial: ' . $user->serial,
@@ -1755,6 +1793,7 @@ class HolooController extends Controller
                     CURLOPT_TIMEOUT => 0,
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_CUSTOMREQUEST => 'GET',
                     CURLOPT_HTTPHEADER => array(
                         'serial: ' . $user->serial,
@@ -1822,6 +1861,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -1854,6 +1894,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -1912,6 +1953,7 @@ class HolooController extends Controller
           CURLOPT_TIMEOUT => 0,
           CURLOPT_FOLLOWLOCATION => true,
           CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_SSL_VERIFYPEER => false,
           CURLOPT_CUSTOMREQUEST => 'GET',
           CURLOPT_HTTPHEADER => array(
             'serial: ' . $user->serial,
@@ -1955,6 +1997,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -2014,6 +2057,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_POSTFIELDS => array("data" => json_encode($data)),
             CURLOPT_HTTPHEADER => array(
@@ -2152,6 +2196,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -2172,6 +2217,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -2204,6 +2250,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -2224,6 +2271,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -2264,6 +2312,7 @@ class HolooController extends Controller
                 CURLOPT_TIMEOUT => 0,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_CUSTOMREQUEST => 'GET',
                 CURLOPT_USERPWD => $user->consumerKey. ":" . $user->consumerSecret,
             ));
@@ -2341,6 +2390,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
                 'serial: ' . $user->serial,
@@ -2424,6 +2474,9 @@ class HolooController extends Controller
             $user = User::where(["id"=>$user_id])->first();
             auth()->login($user);
 
+            $config = $user->config;
+            $config = json_decode($config);
+
             $orderInvoice=json_decode($invoice->invoice);
 
             $_data = (object) $orderInvoice->date_created;
@@ -2469,7 +2522,7 @@ class HolooController extends Controller
                 continue;
             }
             else{
-                $payment = (object) $orderInvoice->payment;
+                $payment = $config->payment;
 
             }
             if (!isset($payment->{$orderInvoice->payment_method}) and !isset($user->config->payment->{$orderInvoice->payment_method})){
@@ -2488,7 +2541,7 @@ class HolooController extends Controller
                 }
             }
             //log::info("payment: ".json_encode($payment));
-            $orderInvoice=(object)app('App\Http\Controllers\PshopController')->get_invoice($orderInvoice->id);
+            $orderInvoice=(object)app('App\Http\Controllers\PshopController')->get_invoice($orderInvoice->order_id);
             //$fetchAllWCProds=app('App\Http\Controllers\PshopController')->fetchAllWCProds(true);
 
 
@@ -2500,21 +2553,21 @@ class HolooController extends Controller
                 continue;
             }
 
-            if(!isset($orderInvoice->items)){
+            if(!isset($orderInvoice->order_rows)){
                 $this->InvoiceChangeStatus($invoice->order_id, json_encode(["order_id"=>$orderInvoice->id,"result" => $orderInvoice,"message"=>"کد سفارش در ووکامرس یافت نشد"]));
                 continue;
             }
             $cate=[];
 
-            foreach ($orderInvoice->items as $item) {
+            foreach ($orderInvoice->order_rows as $item) {
                 if (is_array($item)) {
                     $item = (object) $item;
                 }
 
 
 
-                if (isset($item->meta_data)) {
-                    $HoloID=$this->findKey($item->meta_data,'_holo_sku');
+                if (isset($item->product_reference)) {
+                    $HoloID= $item->product_reference;
                     $HoloID=str_replace("\r\n","",$HoloID);
                     if($HoloID){
 
@@ -2524,7 +2577,7 @@ class HolooController extends Controller
                             $HoloID=$holooPoshak[0];
                             $HoloIDProp= $holooPoshak[1];
                         }
-                        $total = $this->getAmount($item->total, $orderInvoice->unit_price);
+                        $total = $item->product_price * $item->product_quantity;
 
                         if ($payment->vat) {
                             $lazy += $total * 10 / 100;
@@ -2534,13 +2587,13 @@ class HolooController extends Controller
                             $items[] = array(
                                 'id' => (int)$HoloID,
                                 'Productid' => $HoloID,
-                                'few' => $item->quantity,
-                                'price' => $this->getAmount($item->price, $orderInvoice->unit_price),
+                                'few' => $item->product_quantity,
+                                'price' => $item->product_price,
                                 'discount' => '0',
                                 'poshakinfo' => array(
                                     (object)array(
                                         "id"=> $HoloIDProp,
-                                        "few"=> $item->quantity
+                                        "few"=> $item->product_quantity
                                     )
                                 ),
                                 'levy' => ($payment->vat) ? 10 : 0,
@@ -2552,8 +2605,8 @@ class HolooController extends Controller
                             $items[] = array(
                                 'id' => (int)$HoloID,
                                 'Productid' => $HoloID,
-                                'few' => $item->quantity,
-                                'price' => $this->getAmount($item->price, $orderInvoice->unit_price),
+                                'few' => $item->product_quantity,
+                                'price' => $item->product_price,
                                 'discount' => '0',
                                 'levy' => ($payment->vat) ? 10 : 0,
                                 'scot' => ($payment->vat) ? 0 : 0,
@@ -2561,7 +2614,7 @@ class HolooController extends Controller
                         }
                         $sum_total += $total;
                     }
-                    elseif($orderInvoice->invoice_items_no_holo_code){
+                    elseif($config->invoice_items_no_holo_code){
                         $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                         $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                         continue 2;
@@ -2571,7 +2624,7 @@ class HolooController extends Controller
                     }
 
                 }
-                elseif($orderInvoice->invoice_items_no_holo_code){
+                elseif($config->invoice_items_no_holo_code){
                     $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                     $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                     continue 2;
@@ -2580,39 +2633,30 @@ class HolooController extends Controller
             }
 
             //hazineh haml be sorat kala azafe shavad
-            if (isset($orderInvoice->product_shipping) and $orderInvoice->product_shipping) {
-                $shipping_lines = $orderInvoice->shipping_lines[0] ?? null;
-                if ($shipping_lines) {
+            if (isset($orderInvoice->total_shipping) and !$orderInvoice->total_shipping) {
 
-                    if (is_array($shipping_lines)) {
-                        $shipping_lines = (object) $shipping_lines;
-                    }
-                    $total = $this->getAmount($shipping_lines->total, $orderInvoice->unit_price);
-                    if ($total>0){
 
-                        $scot += $this->getAmount($shipping_lines->total_tax, $orderInvoice->unit_price);
-                        $items[] = array(
-                            'id' => (int)$orderInvoice->product_shipping,
-                            'Productid' => $orderInvoice->product_shipping,
-                            'few' => 1,
-                            'price' => $total,
-                            'discount' => 0,
-                            'levy' => 0,
-                            'scot' => ($payment->vat) ? 0 : 0,
-                        );
+                $total = $orderInvoice->total_shipping;
+                if ($total>0){
 
-                        $sum_total += $total;
-                    }
+                    $scot += $orderInvoice->total_shipping;
+                    $items[] = array(
+                        'id' => $config->product_shipping,
+                        'Productid' => $config->product_shipping,
+                        'few' => 1,
+                        'price' => $total,
+                        'discount' => 0,
+                        'levy' => 0,
+                        'scot' => ($payment->vat) ? 0 : 0,
+                    );
+
+                    $sum_total += $total;
                 }
-
             }
-
-
-
 
             if (sizeof($items) > 0) {
                 $payment_type = "bank";
-                if ($orderInvoice->status_place_payment == "Installment" and $orderInvoice->payment_method=="cod") {
+                if ($config->status_place_payment == "Installment" and $config->payment_method=="cod") {
                     $payment_type = "nesiyeh";
                 }
                 else if (substr($payment->number, 0, 3) == "101") {
@@ -2662,6 +2706,7 @@ class HolooController extends Controller
                     CURLOPT_TIMEOUT => 0,
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_CUSTOMREQUEST => 'POST',
                     CURLOPT_POSTFIELDS => array('data' => json_encode($data)),
                     CURLOPT_HTTPHEADER => array(
@@ -2678,7 +2723,7 @@ class HolooController extends Controller
                 $jsonData = json_encode($data);
                 curl_close($curl);
                 if (isset($response->success) and $response->success) {
-                    $this->InvoiceChangeStatus($invoice->order_id, 'ثبت سفارش فروش انجام شد');
+                    $this->InvoiceChangeStatus($invoice->id, 'ثبت سفارش فروش انجام شد');
                     $this->changeInvoiceStatue($invoice->invoiceId,$user,"200",'ثبت سفارش فروش انجام شد');
                     Invoice::where(['id'=>$invoice->order_id])
                     ->update([
@@ -2712,6 +2757,7 @@ class HolooController extends Controller
         }
 
 
+
     }
 
     public function changeInvoiceStatue($order_id,$user,$status,$message){
@@ -2733,6 +2779,7 @@ class HolooController extends Controller
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_CUSTOMREQUEST => 'PUT',
             CURLOPT_USERAGENT => 'Holoo',
             CURLOPT_POSTFIELDS => $data,

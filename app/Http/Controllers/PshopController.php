@@ -2,30 +2,23 @@
 
 namespace App\Http\Controllers;
 
+
 use Exception;
-use App\Jobs\test;
 use App\Models\User;
+use SimpleXMLElement;
 use App\Models\Webhook;
+
 use App\Jobs\MirrorWebHook;
 use Illuminate\Http\Request;
-use App\Models\ProductRequest;
-use Illuminate\Support\Carbon;
+
 use App\Jobs\CreateWcAttribute;
 use App\Jobs\UpdateProductFind;
-
 use App\Jobs\UpdateProductsUser;
-
-
-use App\Jobs\createSingleProduct;
-
-use App\Jobs\updateWCSingleProduct;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Artisan;
 use App\Jobs\UpdateProductsVariationUser;
 use Symfony\Component\HttpFoundation\Response;
-
 
 class PshopController extends Controller
 {
@@ -379,59 +372,114 @@ class PshopController extends Controller
 
     public function updateSingleProduct($params)
     {
-        $apiUrl = env('API_URL'); // آدرس API پرستاشاپ
+        $apiUrl = env('API_URL'); // URL پایه API پرستاشاپ
         $apiKey = env('API_KEY'); // کلید API پرستاشاپ
 
+        try {
+            // مرحله اول: به‌روزرسانی محصول
+            $productDataXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+                <prestashop xmlns:xlink=\"http://www.w3.org/1999/xlink\">
+                    <product>
+                        <id><![CDATA[{$params['id']}]]></id>
+                        <price><![CDATA[{$params['price']}]]></price>
+                        <reference><![CDATA[{$params['reference']}]]></reference>
+                        <name>
+                            <language id=\"1\"><![CDATA[{$params['name']}]]></language>
+                            <language id=\"2\"><![CDATA[{$params['name']}]]></language>
+                        </name>
+                        <weight><![CDATA[{$params['weight']}]]></weight>
+                        <width><![CDATA[{$params['width']}]]></width>
+                        <height><![CDATA[{$params['height']}]]></height>
+                        <depth><![CDATA[{$params['depth']}]]></depth>
+                        <id_tax_rules_group><![CDATA[{$params['id_tax_rules_group']}]]></id_tax_rules_group>
+                        <location><![CDATA[{$params['location']}]]></location>
+                        <ean13><![CDATA[{$params['ean13']}]]></ean13>
+                        <isbn><![CDATA[{$params['isbn']}]]></isbn>
+                        <upc><![CDATA[{$params['upc']}]]></upc>
+                        <active><![CDATA[{$params['active']}]]></active>
+                        <on_sale><![CDATA[{$params['on_sale']}]]></on_sale>
+                        <available_for_order><![CDATA[{$params['available_for_order']}]]></available_for_order>
+                        <condition><![CDATA[{$params['condition']}]]></condition>
+                        <show_price><![CDATA[{$params['show_price']}]]></show_price>
+                        <state><![CDATA[{$params['state']}]]></state>
+                        <link_rewrite><![CDATA[{$params['link_rewrite']}]]></link_rewrite>
+                    </product>
+                </prestashop>";
 
+            // ارسال درخواست PUT برای به‌روزرسانی محصول
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => "{$apiUrl}/api/products/{$params['id']}?output_format=XML",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Basic ' . base64_encode($apiKey . ':'),
+                    'Content-Type: application/xml'
+                ],
+                CURLOPT_CUSTOMREQUEST => "PUT",
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_POSTFIELDS => $productDataXml,
+            ]);
 
-        // داده‌های محصول
-        $productData = [
-            'product' => [
-                'id' => $params['id'],
-                'price' => $params['price'],
-                'quantity' => (int)$params['stock_quantity'],
-                'name' => [
-                    'language' => [
-                        [
-                            'id' => 1, // شناسه زبان فارسی
-                            'value' => $params['name'],    // نام محصول به زبان فارسی
-                        ]
-                    ]
-                ]
-            ]
-        ];
+            $productResponse = curl_exec($ch);
+            $productHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-        // تبدیل داده‌ها به JSON
-        $data = json_encode($productData);
+            if ($productHttpCode >= 200 && $productHttpCode < 300) {
+                Log::info("محصول با موفقیت به‌روزرسانی شد. کد وضعیت: {$productHttpCode}");
+            } else {
+                Log::error("به‌روزرسانی محصول ناموفق بود. کد وضعیت: {$productHttpCode}, پاسخ: {$productResponse}");
+                throw new \Exception("خطا در به‌روزرسانی محصول.");
+            }
 
-        // تنظیمات cURL برای درخواست PUT به API پرستاشاپ
-        $ch = curl_init();
+            // مرحله دوم: به‌روزرسانی موجودی
+            if (isset($params['stock_id']) && isset($params['quantity'])) {
+                $stockDataXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+                    <prestashop xmlns:xlink=\"http://www.w3.org/1999/xlink\">
+                        <stock_available>
+                            <id><![CDATA[{$params['stock_id']}]]></id>
+                            <quantity><![CDATA[{$params['quantity']}]]></quantity>
+                            <id_product>{$params['id']}</id_product>
+                            <id_product_attribute>{$params['id_product_attribute']}</id_product_attribute>
+                            <depends_on_stock>0</depends_on_stock>
+                            <out_of_stock>0</out_of_stock>
+                            <id_shop>1</id_shop>
+                        </stock_available>
+                    </prestashop>";
 
-        curl_setopt($ch, CURLOPT_URL, "{$apiUrl}/api/products/{$params['id']}");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Authorization: Basic ' . base64_encode($apiKey . ':'),
-            'Content-Type: application/json'
-        ]);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+                // ارسال درخواست PUT برای به‌روزرسانی موجودی
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => "{$apiUrl}/api/stock_availables/{$params['stock_id']}?output_format=XML",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER => [
+                        'Authorization: Basic ' . base64_encode($apiKey . ':'),
+                        'Content-Type: application/xml'
+                    ],
+                    CURLOPT_CUSTOMREQUEST => "PUT",
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_POSTFIELDS => $stockDataXml,
+                ]);
 
-        // اجرای درخواست
-        $response = curl_exec($ch);
+                $stockResponse = curl_exec($ch);
+                $stockHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
 
-        // بررسی خطا در cURL
-        if (curl_errno($ch)) {
-            return response()->json(['error' => 'Failed to update product.'], 500);
+                if ($stockHttpCode >= 200 && $stockHttpCode < 300) {
+                    Log::info("موجودی محصول با موفقیت به‌روزرسانی شد. کد وضعیت: {$stockHttpCode}");
+                    return response()->json(['message' => 'محصول و موجودی با موفقیت به‌روزرسانی شد.']);
+                } else {
+                    Log::error("به‌روزرسانی موجودی محصول ناموفق بود. کد وضعیت: {$stockHttpCode}, پاسخ: {$stockResponse}");
+                    throw new \Exception("خطا در به‌روزرسانی موجودی محصول.");
+                }
+            } else {
+                throw new \Exception("مقدار موجودی یا شناسه موجودی ارسال نشده است.");
+            }
+        } catch (\Exception $e) {
+            Log::error("خطا در به‌روزرسانی محصول: " . $e->getMessage());
+            return response()->json(['error' => 'خطا در به‌روزرسانی محصول.', 'message' => $e->getMessage()], 500);
         }
-
-        // بستن اتصال cURL
-        curl_close($ch);
-
-        // تبدیل پاسخ JSON به آرایه
-        $updatedProduct = json_decode($response, true);
-
-        return response()->json($updatedProduct);
     }
+
 
     public function updateAllProductFromHolooToWC3()
     {
@@ -441,8 +489,7 @@ class PshopController extends Controller
         ini_set('max_execution_time', 0); // 120 (seconds) = 2 Minutes
         set_time_limit(0);
         $cf=(object)$user->config;
-        UpdateProductFind::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"serial"=>$user->serial,"apiKey"=>$user->apiKey,"holooDatabaseName"=>$user->holooDatabaseName,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret,"cloudTokenExDate"=>$user->cloudTokenExDate,"cloudToken"=>$user->cloudToken, "holo_unit"=>$user->holo_unit, "plugin_unit"=>$user->plugin_unit,"user_traffic"=>$user->user_traffic,"poshak"=>$user->poshak],$config->product_cat,$cf,1)->onConnection($user->queue_server)->onQueue("high");
-
+        UpdateProductFind::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"serial"=>$user->serial,"apiKey"=>$user->apiKey,"holooDatabaseName"=>$user->holooDatabaseName,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret,"cloudTokenExDate"=>$user->cloudTokenExDate,"cloudToken"=>$user->cloudToken, "holo_unit"=>$user->holo_unit, "plugin_unit"=>$user->plugin_unit,"user_traffic"=>$user->user_traffic,"poshak"=>$user->poshak],$cf->product_cat ?? null,$cf,1)->onConnection($user->queue_server)->onQueue("default");
         return $this->sendResponse('درخواست به روزرسانی محصولات با موفقیت دریافت شد ', Response::HTTP_OK, ["result"=>["msg_code"=>0]]);
 
     }
@@ -461,6 +508,7 @@ class PshopController extends Controller
     }
 
     public function holooWebHookPrestaShop(Request $request) {
+
         ini_set('max_execution_time', 0);
         set_time_limit(0);
         log::info($request->all());
@@ -506,7 +554,7 @@ class PshopController extends Controller
 
             if (!$config) return $this->sendResponse('تنظیمات کاربر دریافت نشده است', Response::HTTP_OK, []);
 
-            $PSProducts = $this->getPSProductsByHolooIds($HolooIDs);
+            $PSProducts = $this->getProductsWithQuantities();
 
             foreach ($HolooIDs as $holooID) {
                 $index_value = array_search($holooID, $HolooIDs);
@@ -528,10 +576,6 @@ class PshopController extends Controller
             $holooProducts = $this->reMapHolooProduct($holooProducts);
 
             foreach ($PSProducts as $PSProduct) {
-                if ($PSProduct['type'] == "variable") {
-                    $this->updatePSVariationMultiProductWithHoloo($PSProduct, $holooProducts, $config);
-                    continue;
-                }
 
                 $holooCode = $PSProduct['reference'];
 
@@ -539,14 +583,24 @@ class PshopController extends Controller
 
                 $holooProduct = $holooProducts[(string)$holooCode];
 
-                $data = [
-                    'id' => $PSProduct['id'],
-                    'name' => (isset($config->update_product_name) && $config->update_product_name == "1") ? $this->arabicToPersian($holooProduct['name']) : $PSProduct['name'],
-                    'price' => (isset($config->update_product_price) && $config->update_product_price == "1") ? $this->get_price_type($config->sales_price_field, $holooProduct) : $PSProduct['price'],
-                    'quantity' => (isset($config->update_product_stock) && $config->update_product_stock == "1") ? $this->get_exist_type($config->product_stock_field, $holooProduct) : $PSProduct['quantity']
-                ];
 
-                $this->updatePSProduct($data);
+                $data = $PSProduct;
+                // به‌روزرسانی نام محصول در صورت فعال بودن تنظیم
+                if (isset($config->update_product_name) && $config->update_product_name == "1") {
+                    $data['name'] = $this->arabicToPersian($holooProduct['name']);
+                }
+
+                // به‌روزرسانی قیمت محصول در صورت فعال بودن تنظیم
+                if (isset($config->update_product_price) && $config->update_product_price == "1") {
+                    $data['price'] = $this->get_price_type($config->sales_price_field, $holooProduct);
+                }
+
+                // به‌روزرسانی موجودی محصول در صورت فعال بودن تنظیم
+                if (isset($config->update_product_stock) && $config->update_product_stock == "1") {
+                    $data['quantity'] = $this->get_exist_type($config->product_stock_field, $holooProduct);
+                }
+
+                $this->updateSingleProduct($data);
             }
 
             if (count($failures) > 0 && isset($config->insert_new_product) && $config->insert_new_product == 1) {
@@ -796,6 +850,69 @@ class PshopController extends Controller
         }
 
     }
+
+    private function createPSProduct($params)
+    {
+        try {
+            $prestashopApiUrl = env('API_URL'); // URL پایه API پرستاشاپ
+            $prestashopApiKey = env('API_KEY'); // کلید API پرستاشاپ
+
+            if (!$prestashopApiUrl || !$prestashopApiKey) {
+                throw new Exception("تنظیمات API پرستاشاپ مشخص نیست");
+            }
+
+            // بررسی پارامترهای ورودی
+            if (!isset($params['reference'], $params['name'], $params['price'], $params['quantity'])) {
+                throw new Exception("پارامترهای لازم برای ایجاد محصول ناقص است");
+            }
+
+            $productDataXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+                <prestashop xmlns:xlink=\"http://www.w3.org/1999/xlink\">
+                    <product>
+                        <price><![CDATA[{$params['price']}]]></price>
+                        <reference><![CDATA[{$params['reference']}]]></reference>
+                        <name>
+                            <language id=\"1\"><![CDATA[{$params['name']}]]></language>
+                            <language id=\"2\"><![CDATA[{$params['name']}]]></language>
+                        </name>
+                        <link_rewrite>
+                            <language id=\"1\"><![CDATA[placeholder]]></language>
+                            <language id=\"2\"><![CDATA[placeholder]]></language>
+                        </link_rewrite>
+                        <active><![CDATA[0]]></active>
+                        <available_for_order><![CDATA[0]]></available_for_order>
+                        <show_price><![CDATA[1]]></show_price>
+                        <state><![CDATA[0]]></state>
+                    </product>
+                </prestashop>";
+            // ارسال درخواست به API پرستاشاپ
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $prestashopApiUrl . '/api/products');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $productDataXml);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER , false);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Basic ' . base64_encode($prestashopApiKey . ':'),
+                'Content-Type: application/xml',
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 201) {
+                throw new Exception("خطا در ایجاد محصول: " . $httpCode.$response);
+            }
+
+            log::info("محصول جدید با موفقیت ایجاد شد: " . json_encode($params));
+        } catch (Exception $e) {
+            log::error("خطا در ایجاد محصول جدید: " . $e->getMessage());
+        }
+    }
+
+
+
 
     public function handleWebhook(Request $request)
     {
@@ -2185,7 +2302,8 @@ class PshopController extends Controller
         return $this->sendResponse('تخلیه صف با موفقیت انجام شد', Response::HTTP_OK,[]);
     }
 
-    public function getProductsWithQuantities(){
+    public function getProductsWithQuantities()
+    {
         // URL و API Key از فایل env خوانده می‌شوند
         $apiUrl = env('API_URL');
         $apiKey = env('API_KEY');
@@ -2193,8 +2311,8 @@ class PshopController extends Controller
         try {
             // آدرس‌های API
             $endpoints = [
-                'products' => $apiUrl . '/api/products?output_format=JSON&display=[id,name,price,reference]',
-                'stock' => $apiUrl . '/api/stock_availables?output_format=JSON&display=[id_product,quantity]',
+                'products' => $apiUrl . '/api/products?output_format=JSON&display=full',
+                'stock' => $apiUrl . '/api/stock_availables?output_format=JSON&display=full',
             ];
 
             // تنظیمات header
@@ -2251,17 +2369,16 @@ class PshopController extends Controller
 
             // ترکیب اطلاعات محصولات و موجودی‌ها
             $result = collect($products)->map(function ($product) use ($stockMap) {
-                return [
-                    'id' => $product['id'],
-                    'name' => $product['name'],
-                    'price' => $product['price'],
-                    'reference' => $product['reference'],
-                    'quantity' => $stockMap->get($product['id'])['quantity'] ?? 0,
-                ];
+                $stock = $stockMap->get($product['id']);
+
+                return array_merge($product, [
+                    'quantity' => $stock['quantity'] ?? 0, // مقدار quantity
+                    'stock_id' => $stock['id'] ?? null,    // مقدار id مربوط به quantity
+                    'id_product_attribute' => $stock['id_product_attribute'] ?? null, // مقدار id_product_attribute
+                ]);
             });
 
-            // بازگرداندن JSON نهایی
-            return response()->json($result);
+            return $result;
 
         } catch (\Exception $e) {
             return response()->json([
