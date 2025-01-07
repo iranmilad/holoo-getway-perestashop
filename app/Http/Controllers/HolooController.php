@@ -2553,13 +2553,13 @@ class HolooController extends Controller
                 continue;
             }
 
-            if(!isset($orderInvoice->order_rows)){
+            if(!isset($orderInvoice->associations->order_rows)){
                 $this->InvoiceChangeStatus($invoice->order_id, json_encode(["order_id"=>$orderInvoice->id,"result" => $orderInvoice,"message"=>"کد سفارش در ووکامرس یافت نشد"]));
                 continue;
             }
             $cate=[];
 
-            foreach ($orderInvoice->order_rows as $item) {
+            foreach ($orderInvoice->associations->order_rows as $item) {
                 if (is_array($item)) {
                     $item = (object) $item;
                 }
