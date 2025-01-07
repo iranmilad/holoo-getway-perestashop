@@ -831,7 +831,7 @@ class HolooController extends Controller
             $scot = 0;
 
             if(!isset($orderInvoice->items)){
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور بدلیل عدم یافت ردیف اقلام انجام نشد');
+                $this->InvoiceChangeStatus($invoice->id, 'ثبت فاکتور بدلیل عدم یافت ردیف اقلام انجام نشد');
                 return $this->sendResponse('ثبت فاکتور بدلیل عدم یافت ردیف اقلام انجام نشد', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
             }
 
