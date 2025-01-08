@@ -768,7 +768,7 @@ class HolooController extends Controller
             log::info("user is not active");
             return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_FORBIDDEN,[]);
         }
-        $this->recordLog("Invoice Payed", $user->siteUrl, "Invoice Payed receive");
+        $this->recordLog("Invoice Payed", $user->id, "Invoice Payed receive");
 
         $invoice = new Invoice();
         $invoice->invoice = json_encode($orderInvoice->request->all());

@@ -484,7 +484,8 @@ class PshopController extends Controller
     public function updateAllProductFromHolooToWC3()
     {
 
-        $user=auth()->user();
+        $user = User::first();
+        auth()->login($user);
 
         ini_set('max_execution_time', 0); // 120 (seconds) = 2 Minutes
         set_time_limit(0);

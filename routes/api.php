@@ -18,7 +18,7 @@ Route::group([
     Route::post('/wcInvoicePayed', [HolooController::class, 'wcInvoicePayed']);
     Route::get('/getProductsWithQuantities', [PshopController::class, 'getProductsWithQuantities']);
     Route::get('/test', [PshopController::class, 'getLanguages']);
-    Route::post('/updateAllProductFromHolooToWC', [PshopController::class, 'updateAllProductFromHolooToWC3'])->middleware('auth:api');
+    Route::post('/updateAllProductFromHolooToWC', [PshopController::class, 'updateAllProductFromHolooToWC3']);
 });
 
 Route::post('/webhook', [PshopController::class, 'holooWebHookPrestaShop']);
