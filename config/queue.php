@@ -88,6 +88,16 @@ return [
             'retry_after' => 90,
             'after_commit' => false,
         ],
+        'server_user_101' => [
+            'driver' => 'database',
+            'connection' => 'cloud1',
+            'table' => 'jobs_101',
+            'queue' => 'default',
+            'retry_after' => 90,
+            'after_commit' => false,
+        ],
+
+
     ],
 
     /*
