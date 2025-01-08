@@ -176,6 +176,33 @@ class Holo extends Module
         }
 
         if (Tools::isSubmit('submitWebhookSettings')) {
+            $settings = [
+                'update_product_price' => Tools::getValue('UPDATE_PRODUCT_PRICE', 1),
+                'update_product_stock' => Tools::getValue('UPDATE_PRODUCT_STOCK', 1),
+                'update_product_name' => Tools::getValue('UPDATE_PRODUCT_NAME', 0),
+                'insert_new_product' => Tools::getValue('INSERT_NEW_PRODUCT', 1),
+                'status_place_payment' => Tools::getValue('STATUS_PLACE_PAYMENT', 'cash'),
+                'sales_price_field' => Tools::getValue('SALES_PRICE_FIELD', 1),
+
+                "product_stock_field"=> Tools::getValue('PRODUCT_STOCK_FIELD', 1),
+                "save_sale_invoice"=> Tools::getValue('SAVE_SALE_INVOICE', 1),
+                "special_price_field"=> Tools::getValue('SPECIAL_PRICE_FIELD', 2),
+                "wholesale_price_field"=> Tools::getValue('WHOLESALE_PRICE_FIELD', 3),
+                'save_pre_sale_invoice' => Tools::getValue('SAVE_PRE_SALE_INVOICE', 1),
+                "insert_product_with_zero_inventory"=> Tools::getValue('INSERT_PRODUCT_WITH_ZERO_INVENTORY', 0),
+                "invoice_items_no_holo_code"=> Tools::getValue('INVOICE_ITEMS_NO_HOLO_CODE', 0),
+            ];
+
+            // Update configurations
+            foreach ($settings as $key => $value) {
+                Configuration::updateValue(strtoupper($key), $value);
+            }
+
+            // Send settings to the server
+            $this->sendSettingsToServer($settings);
+        }
+
+        if (Tools::isSubmit('submitWebhookSettings')) {
             $webhookBaseUrl = Tools::getValue('WEBHOOK_BASE_URL');
             $webhookEnabled = Tools::getValue('WEBHOOK_ORDER_ENABLED');
             Configuration::updateValue('WEBHOOK_BASE_URL', $webhookBaseUrl);
@@ -263,24 +290,241 @@ class Holo extends Module
                 'title' => $this->l('Save'),
             ],
         ];
+
         $fieldsForm[1]['form'] = [
             'legend' => [
-                'title' => $this->l('Update Products'),
+                'title' => $this->l('Advanced Settings'),
+            ],
+            'input' => [
+                [
+                    'type' => 'switch',
+                    'label' => $this->l('Update Product Price'),
+                    'name' => 'UPDATE_PRODUCT_PRICE',
+                    'is_bool' => true,
+                    'values' => [
+                        [
+                            'id' => 'update_price_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
+                        ],
+                        [
+                            'id' => 'update_price_off',
+                            'value' => 0,
+                            'label' => $this->l('Disabled'),
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'switch',
+                    'label' => $this->l('Update Product Stock'),
+                    'name' => 'UPDATE_PRODUCT_STOCK',
+                    'is_bool' => true,
+                    'values' => [
+                        [
+                            'id' => 'update_stock_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
+                        ],
+                        [
+                            'id' => 'update_stock_off',
+                            'value' => 0,
+                            'label' => $this->l('Disabled'),
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'switch',
+                    'label' => $this->l('Update Product Name'),
+                    'name' => 'UPDATE_PRODUCT_NAME',
+                    'is_bool' => true,
+                    'values' => [
+                        [
+                            'id' => 'update_name_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
+                        ],
+                        [
+                            'id' => 'update_name_off',
+                            'value' => 0,
+                            'label' => $this->l('Disabled'),
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'switch',
+                    'label' => $this->l('Insert New Product'),
+                    'name' => 'INSERT_NEW_PRODUCT',
+                    'is_bool' => true,
+                    'values' => [
+                        [
+                            'id' => 'insert_new_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
+                        ],
+                        [
+                            'id' => 'insert_new_off',
+                            'value' => 0,
+                            'label' => $this->l('Disabled'),
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('Status Place Payment'),
+                    'name' => 'STATUS_PLACE_PAYMENT',
+                    'size' => 50,
+                    'desc' => $this->l('Set the default payment status (e.g., cash).'),
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('Sales Price Field'),
+                    'name' => 'SALES_PRICE_FIELD',
+                    'size' => 50,
+                    'desc' => $this->l('Set the sales price field index.'),
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('Product Stock Field'),
+                    'name' => 'PRODUCT_STOCK_FIELD',
+                    'size' => 50,
+                    'desc' => $this->l('Set the product stock field index.'),
+                ],
+                [
+                    'type' => 'switch',
+                    'label' => $this->l('Save Sale Invoice'),
+                    'name' => 'SAVE_SALE_INVOICE',
+                    'is_bool' => true,
+                    'values' => [
+                        [
+                            'id' => 'save_invoice_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
+                        ],
+                        [
+                            'id' => 'save_invoice_off',
+                            'value' => 0,
+                            'label' => $this->l('Disabled'),
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('Special Price Field'),
+                    'name' => 'SPECIAL_PRICE_FIELD',
+                    'size' => 50,
+                    'desc' => $this->l('Set the special price field index.'),
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->l('Wholesale Price Field'),
+                    'name' => 'WHOLESALE_PRICE_FIELD',
+                    'size' => 50,
+                    'desc' => $this->l('Set the wholesale price field index.'),
+                ],
+                [
+                    'type' => 'switch',
+                    'label' => $this->l('Save Pre-Sale Invoice'),
+                    'name' => 'SAVE_PRE_SALE_INVOICE',
+                    'is_bool' => true,
+                    'values' => [
+                        [
+                            'id' => 'save_pre_invoice_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
+                        ],
+                        [
+                            'id' => 'save_pre_invoice_off',
+                            'value' => 0,
+                            'label' => $this->l('Disabled'),
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'switch',
+                    'label' => $this->l('Insert Product With Zero Inventory'),
+                    'name' => 'INSERT_PRODUCT_WITH_ZERO_INVENTORY',
+                    'is_bool' => true,
+                    'values' => [
+                        [
+                            'id' => 'insert_zero_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
+                        ],
+                        [
+                            'id' => 'insert_zero_off',
+                            'value' => 0,
+                            'label' => $this->l('Disabled'),
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'switch',
+                    'label' => $this->l('Invoice Items Without Holo Code'),
+                    'name' => 'INVOICE_ITEMS_NO_HOLO_CODE',
+                    'is_bool' => true,
+                    'values' => [
+                        [
+                            'id' => 'no_holo_code_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
+                        ],
+                        [
+                            'id' => 'no_holo_code_off',
+                            'value' => 0,
+                            'label' => $this->l('Disabled'),
+                        ],
+                    ],
+                ],
             ],
             'submit' => [
-                'title' => $this->l('Update All Products'),
-                'name' => 'updateProductsButton',
+                'title' => $this->l('Save Advanced Settings'),
             ],
         ];
 
-
-
         $helper = new HelperForm();
         $helper->submit_action = 'submitWebhookSettings';
-        $helper->fields_value['WEBHOOK_BASE_URL'] = Configuration::get('WEBHOOK_BASE_URL', 'https://psshop.nilaserver.com');
-        $helper->fields_value['WEBHOOK_ORDER_ENABLED'] = Configuration::get('WEBHOOK_ORDER_ENABLED');
+        $helper->fields_value = [
+            'WEBHOOK_BASE_URL' => Configuration::get('WEBHOOK_BASE_URL', 'https://psshop.nilaserver.com'),
+            'WEBHOOK_ORDER_ENABLED' => Configuration::get('WEBHOOK_ORDER_ENABLED', false),
+            'UPDATE_PRODUCT_PRICE' => Configuration::get('UPDATE_PRODUCT_PRICE', '1'),
+            'UPDATE_PRODUCT_STOCK' => Configuration::get('UPDATE_PRODUCT_STOCK', '1'),
+            'UPDATE_PRODUCT_NAME' => Configuration::get('UPDATE_PRODUCT_NAME', '0'),
+            'INSERT_NEW_PRODUCT' => Configuration::get('INSERT_NEW_PRODUCT', '1'),
+            'STATUS_PLACE_PAYMENT' => Configuration::get('STATUS_PLACE_PAYMENT', 'cash'),
+            'SALES_PRICE_FIELD' => Configuration::get('SALES_PRICE_FIELD', '1'),
+            'PRODUCT_STOCK_FIELD' => Configuration::get('PRODUCT_STOCK_FIELD', '1'),
+            'SAVE_SALE_INVOICE' => Configuration::get('SAVE_SALE_INVOICE', '1'),
+            'SPECIAL_PRICE_FIELD' => Configuration::get('SPECIAL_PRICE_FIELD', '2'),
+            'WHOLESALE_PRICE_FIELD' => Configuration::get('WHOLESALE_PRICE_FIELD', '3'),
+            'SAVE_PRE_SALE_INVOICE' => Configuration::get('SAVE_PRE_SALE_INVOICE', '1'),
+            'INSERT_PRODUCT_WITH_ZERO_INVENTORY' => Configuration::get('INSERT_PRODUCT_WITH_ZERO_INVENTORY', '0'),
+            'INVOICE_ITEMS_NO_HOLO_CODE' => Configuration::get('INVOICE_ITEMS_NO_HOLO_CODE', '0'),
+        ];
 
         return $helper->generateForm($fieldsForm);
     }
 
+
+
+    private function sendSettingsToServer($settings)
+    {
+        $webhookBaseUrl = Configuration::get('WEBHOOK_BASE_URL');
+        $configUrl = rtrim($webhookBaseUrl, '/') . '/api/config';
+
+        $ch = curl_init($configUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($settings));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            PrestaShopLogger::addLog("Failed to send settings to server. HTTP Code: {$httpCode}", 3);
+        } else {
+            PrestaShopLogger::addLog("Settings sent successfully to server.", 1);
+        }
+    }
 }

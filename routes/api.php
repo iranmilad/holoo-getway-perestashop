@@ -16,6 +16,7 @@ Route::group([
     Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
     Route::post('/profile', [AuthController::class, 'profile'])->middleware('auth:api');
     Route::post('/wcInvoicePayed', [HolooController::class, 'wcInvoicePayed']);
+    Route::post('/config', [PshopController::class, 'config']);
     Route::get('/getProductsWithQuantities', [PshopController::class, 'getProductsWithQuantities']);
     Route::get('/test', [PshopController::class, 'getLanguages']);
     Route::post('/updateAllProductFromHolooToWC', [PshopController::class, 'updateAllProductFromHolooToWC3']);

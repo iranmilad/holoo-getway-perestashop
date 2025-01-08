@@ -479,6 +479,44 @@ class PshopController extends Controller
             return response()->json(['error' => 'خطا در به‌روزرسانی محصول.', 'message' => $e->getMessage()], 500);
         }
     }
+    public function config(Request $request)
+    {
+        // ورود کاربر برای آزمایش (اختیاری، فقط برای مثال)
+        $user = User::first();
+        auth()->login($user);
+
+        // دریافت تنظیمات کاربر به‌صورت یک آبجکت
+        $config = (object)$user->config;
+
+        // مقادیر جدید از درخواست
+        $newConfig = $request->validate([
+            'update_product_price' => 'required|in:0,1',
+            'update_product_stock' => 'required|in:0,1',
+            'update_product_name' => 'required|in:0,1',
+            'insert_new_product' => 'required|in:0,1',
+            'status_place_payment' => 'required|string',
+            'sales_price_field' => 'required|integer',
+            'product_stock_field' => 'required|integer',
+            'save_sale_invoice' => 'required|in:0,1',
+            'special_price_field' => 'required|integer',
+            'wholesale_price_field' => 'required|integer',
+            'save_pre_sale_invoice' => 'required|in:0,1',
+            'insert_product_with_zero_inventory' => 'required|in:0,1',
+            'invoice_items_no_holo_code' => 'required|in:0,1',
+        ]);
+
+        // ادغام مقادیر جدید با مقادیر فعلی
+        $updatedConfig = array_merge((array)$config, $newConfig);
+
+        // ذخیره مقادیر جدید در کاربر
+        $user->config = $updatedConfig;
+        $user->save();
+
+        return response()->json([
+            'message' => 'User config updated successfully.',
+            'config' => $updatedConfig
+        ]);
+    }
 
 
     public function updateAllProductFromHolooToWC3()
