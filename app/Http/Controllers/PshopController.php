@@ -486,8 +486,8 @@ class PshopController extends Controller
         auth()->login($user);
 
         // دریافت تنظیمات کاربر به‌صورت یک آبجکت
-        $config = (object)$user->config;
-
+        $config = $user->config;
+        $config = json_decode($config);
         // مقادیر جدید از درخواست
         $newConfig = $request->validate([
             'update_product_price' => 'required|in:0,1',

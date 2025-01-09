@@ -761,7 +761,7 @@ class HolooController extends Controller
         $user = User::first();
         auth()->login($user);
         $config = $user->config;
-        //$config = json_decode($config);
+        $config = json_decode($config);
         $invoice=null;
 
         if($user->active==false){
@@ -1006,7 +1006,7 @@ class HolooController extends Controller
 
 
         }
-        return $this->sendResponse('ثبت فاکتور خاموش است', Response::HTTP_OK, ["result" => ["msg_code" => 0,"param"=>$orderInvoice->save_sale_invoice]]);
+        return $this->sendResponse('ثبت فاکتور خاموش است', Response::HTTP_OK, ["result" => ["msg_code" => 0,"param"=>$config->save_sale_invoice]]);
     }
 
     private function wcInvoiceBank($orderInvoice, $fee, $custid, $DateString, $kind)
