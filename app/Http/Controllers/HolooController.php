@@ -761,7 +761,7 @@ class HolooController extends Controller
         $user = User::first();
         auth()->login($user);
         $config = $user->config;
-        $config = json_decode($config);
+        //$config = json_decode($config);
         $invoice=null;
 
         if($user->active==false){

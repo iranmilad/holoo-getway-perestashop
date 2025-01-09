@@ -30,9 +30,9 @@ class Holo extends Module
 
         $order = $params['order'];
         $paidStatus = Configuration::get('PS_OS_PAYMENT');
-        if ($order->current_state != $paidStatus) {
-            return;
-        }
+        // if ($order->current_state != $paidStatus) {
+        //     return;
+        // }
 
         $webhookBaseUrl = Configuration::get('WEBHOOK_BASE_URL');
         $webhookUrl = rtrim($webhookBaseUrl, '/') . '/api/wcInvoicePayed';
@@ -481,6 +481,17 @@ class Holo extends Module
             ],
         ];
 
+
+        $fieldsForm[2]['form'] = [
+            'legend' => [
+                'title' => $this->l('Update Products'),
+            ],
+            'submit' => [
+                'title' => $this->l('Update All Products'),
+                'name' => 'updateProductsButton',
+            ],
+        ];
+
         $helper = new HelperForm();
         $helper->submit_action = 'submitWebhookSettings';
         $helper->fields_value = [
@@ -515,6 +526,8 @@ class Holo extends Module
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($settings));
+        //set time out
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 
         $response = curl_exec($ch);
