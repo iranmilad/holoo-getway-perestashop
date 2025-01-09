@@ -975,7 +975,7 @@ class HolooController extends Controller
                 curl_close($curl);
                 if (isset($response->success) and $response->success) {
                     $this->InvoiceChangeStatus($invoice->order_id, 'ثبت سفارش فروش انجام شد');
-                    Invoice::where(['id'=>$invoice->order_id])
+                    Invoice::where(['invoiceId'=>$invoice->order_id])
                     ->update([
                     'holooInvoice' => $data,
                     ]);
@@ -987,7 +987,7 @@ class HolooController extends Controller
                         return $this->sendResponse('ثبت سفارش فروش انجام شد', Response::HTTP_OK, ["result" => ["msg_code" => 1]]);
                     }
                     $this->InvoiceChangeStatus($invoice->order_id, json_encode([$response->message]));
-                    Invoice::where(['id'=>$invoice->order_id])
+                    Invoice::where(['invoiceId'=>$invoice->order_id])
                     ->update([
                         'holooInvoice' => $data
                     ]);
@@ -2426,7 +2426,7 @@ class HolooController extends Controller
         $input = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/', function ($match) {
             return mb_convert_encoding(pack('H*', $match[1]), 'UTF-8', 'UCS-2BE');
         }, $input);
-        Invoice::where(['id'=>$id,])
+        Invoice::where(['invoiceId'=>$id,])
         ->update([
         'status' =>$input ,
         ]);
@@ -2725,7 +2725,7 @@ class HolooController extends Controller
                 if (isset($response->success) and $response->success) {
                     $this->InvoiceChangeStatus($invoice->id, 'ثبت سفارش فروش انجام شد');
                     $this->changeInvoiceStatue($invoice->invoiceId,$user,"200",'ثبت سفارش فروش انجام شد');
-                    Invoice::where(['id'=>$invoice->order_id])
+                    Invoice::where(['invoiceId'=>$invoice->order_id])
                     ->update([
                         'holooInvoice' => $jsonData,
                     ]);
@@ -2741,7 +2741,7 @@ class HolooController extends Controller
                     $this->changeInvoiceStatue($invoice->invoiceId, $user, "400", $message);
 
                     // Update the invoice in the database
-                    Invoice::where(['id' => $invoice->order_id])
+                    Invoice::where(['invoiceId' => $invoice->order_id])
                         ->update([
                             'holooInvoice' => $jsonData
                         ]);
