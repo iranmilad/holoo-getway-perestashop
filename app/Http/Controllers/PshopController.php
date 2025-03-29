@@ -540,8 +540,8 @@ class PshopController extends Controller
         $psProducts=$this->getProductsWithQuantities();
         $response_products=[];
         foreach ($psProducts as $PsProd) {
-            if (count($PsProd->reference)>0) {
-                $wcHolooCode = $PsProd->reference;
+            if (count($PsProd->upc)>0) {
+                $wcHolooCode = $PsProd->upc;
                 $response_products[]=$wcHolooCode;
             }
         }
@@ -619,7 +619,7 @@ class PshopController extends Controller
 
             foreach ($PSProducts as $PSProduct) {
 
-                $holooCode = $PSProduct['reference'];
+                $holooCode = $PSProduct['upc'];
 
                 if ($holooCode == null || !array_key_exists((string)$holooCode, $holooProducts)) continue;
 
@@ -650,7 +650,7 @@ class PshopController extends Controller
                     $holooProduct = $holooProducts[(string)$holooID];
 
                     $param = [
-                        "reference" => $holooID,
+                        "upc" => $holooID,
                         "name" => $this->arabicToPersian($holooProduct->name),
                         'price' => $this->get_price_type($config->sales_price_field, $holooProduct),
                         'quantity' => $this->get_exist_type($config->product_stock_field, $holooProduct),
@@ -904,7 +904,7 @@ class PshopController extends Controller
             }
 
             // بررسی پارامترهای ورودی
-            if (!isset($params['reference'], $params['name'], $params['price'], $params['quantity'])) {
+            if (!isset($params['upc'], $params['name'], $params['price'], $params['quantity'])) {
                 throw new Exception("پارامترهای لازم برای ایجاد محصول ناقص است");
             }
 
@@ -912,7 +912,7 @@ class PshopController extends Controller
                 <prestashop xmlns:xlink=\"http://www.w3.org/1999/xlink\">
                     <product>
                         <price><![CDATA[{$params['price']}]]></price>
-                        <reference><![CDATA[{$params['reference']}]]></reference>
+                        <upc><![CDATA[{$params['upc']}]]></upc>
                         <name>
                             <language id=\"1\"><![CDATA[{$params['name']}]]></language>
                             <language id=\"2\"><![CDATA[{$params['name']}]]></language>
@@ -1016,9 +1016,9 @@ class PshopController extends Controller
             // تبدیل داده‌های پاسخ به آرایه
             $products = $response->getData(true);
 
-            // فیلتر کردن محصولات بر اساس references
+            // فیلتر کردن محصولات بر اساس Upcs
             $filteredProducts = collect($products)->filter(function ($product) use ($holooCodes) {
-                return in_array($product['reference'],$holooCodes);
+                return in_array($product['upc'],$holooCodes);
             });
 
             // بازگرداندن نتیجه به صورت JSON
@@ -1324,7 +1324,7 @@ class PshopController extends Controller
 
         try {
             // آدرس API برای دریافت سفارش‌ها
-            $url = "{$apiUrl}/api/orders?output_format=JSON&filter[reference]={$invoice_id}";
+            $url = "{$apiUrl}/api/orders?output_format=JSON&filter[upc]={$invoice_id}";
 
             // تنظیمات CURL
             $ch = curl_init();
@@ -1353,7 +1353,7 @@ class PshopController extends Controller
             if (empty($responseData['orders'])) {
                 return response()->json([
                     'error' => 'Order not found.',
-                    'reference' => $invoice_id,
+                    'upc' => $invoice_id,
                 ], 404);
             }
 
@@ -1417,8 +1417,8 @@ class PshopController extends Controller
 
         try {
             // آدرس API برای دریافت اطلاعات محصول و ترکیب‌ها
-            $productUrl = "{$apiUrl}/api/products/{$productId}?output_format=JSON&display=[id,name,price,reference]";
-            $combinationsUrl = "{$apiUrl}/api/combinations?output_format=JSON&filter[id_product]={$productId}&display=[id,id_product,id_stock_available,price,reference]";
+            $productUrl = "{$apiUrl}/api/products/{$productId}?output_format=JSON&display=[id,name,price,upc]";
+            $combinationsUrl = "{$apiUrl}/api/combinations?output_format=JSON&filter[id_product]={$productId}&display=[id,id_product,id_stock_available,price,upc]";
 
             // تنظیمات CURL
             $headers = [
@@ -1483,7 +1483,7 @@ class PshopController extends Controller
                 return [
                     'id' => $combination['id'],
                     'price' => $combination['price'],
-                    'reference' => $combination['reference'],
+                    'upc' => $combination['upc'],
                     'quantity' => $quantity,
                 ];
             });
@@ -1493,7 +1493,7 @@ class PshopController extends Controller
                 'id' => $productData['id'],
                 'name' => $productData['name'],
                 'price' => $productData['price'],
-                'reference' => $productData['reference'],
+                'upc' => $productData['upc'],
                 'quantity' => $combinations->sum('quantity'), // جمع موجودی ترکیب‌ها
                 'combinations' => $combinations->toArray(),
             ];
@@ -1517,7 +1517,7 @@ class PshopController extends Controller
             foreach ($variations as $productId) {
 
                 // دریافت ترکیب‌های محصول از پرستاشاپ
-                $combinationsUrl = "{$apiUrl}/api/combinations?output_format=JSON&filter[id_product]={$productId}&display=[id,id_product,id_stock_available,price,reference]";
+                $combinationsUrl = "{$apiUrl}/api/combinations?output_format=JSON&filter[id_product]={$productId}&display=[id,id_product,id_stock_available,price,upc]";
                 $headers = [
                     'Authorization: Basic ' . base64_encode($apiKey . ':')
                 ];
@@ -1541,13 +1541,13 @@ class PshopController extends Controller
                 foreach ($combinations as $combination) {
                     $combinationId = $combination['id'];
                     $stockAvailableId = $combination['id_stock_available'];
-                    $reference = $combination['reference'];
+                    $upc = $combination['upc'];
 
                     $productFind = false;
                     foreach ($holooProducts as $key => $HolooProd) {
                         $HolooProd = (object)$HolooProd;
 
-                        if ($reference == $HolooProd->a_Code) {
+                        if ($upc == $HolooProd->a_Code) {
                             $productFind = true;
 
                             // قیمت و موجودی جدید
@@ -1584,7 +1584,7 @@ class PshopController extends Controller
                     }
 
                     if (!$productFind) {
-                        Log::info("Combination with reference {$reference} not found in Holoo products.");
+                        Log::info("Combination with upc {$upc} not found in Holoo products.");
                     }
                 }
             }
@@ -1843,14 +1843,14 @@ class PshopController extends Controller
         }
 
         foreach ($variations as $variation) {
-            $psReference = $variation['reference'];
+            $psUpc = $variation['upc'];
 
-            if (!$psReference || !array_key_exists((string)$psReference, $holooProducts)) {
+            if (!$psUpc || !array_key_exists((string)$psUpc, $holooProducts)) {
                 Log::warning("Holoo code not found or invalid for variation ID: {$variation['id']} in product ID: {$productId}");
                 continue;
             }
 
-            $holooProduct = $holooProducts[(string)$psReference];
+            $holooProduct = $holooProducts[(string)$psUpc];
 
             $updateRequired = false;
             $data = [
@@ -2010,14 +2010,14 @@ class PshopController extends Controller
         }
 
         foreach ($variations as $variation) {
-            $psReference = $variation['reference'];
+            $psUpc = $variation['upc'];
 
-            if (!$psReference || !array_key_exists((string)$psReference, $holooProducts)) {
+            if (!$psUpc || !array_key_exists((string)$psUpc, $holooProducts)) {
                 Log::warning("Holoo code not found for variation ID: {$variation['id']} in product ID: {$productId} (User ID: {$user->id})");
                 continue;
             }
 
-            $holooProduct = $holooProducts[(string)$psReference];
+            $holooProduct = $holooProducts[(string)$psUpc];
 
             $updateRequired = false;
             $data = [
@@ -2062,7 +2062,7 @@ class PshopController extends Controller
                     "siteUrl" => $user->siteUrl,
                     "consumerKey" => $user->consumerKey,
                     "consumerSecret" => $user->consumerSecret,
-                ], $data, $psReference)->onConnection($user->queue_server)->onQueue("high");
+                ], $data, $psUpc)->onConnection($user->queue_server)->onQueue("high");
             }
         }
     }

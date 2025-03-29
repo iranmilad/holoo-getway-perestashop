@@ -841,8 +841,8 @@ class HolooController extends Controller
                     $item = (object) $item;
                 }
 
-                if (isset($item->product_reference)) {
-                    $HoloID=$item->product_reference;
+                if (isset($item->product_upc)) {
+                    $HoloID=$item->product_upc;
                     $HoloID=str_replace("\r\n","",$HoloID);
                     if($HoloID){
 
@@ -2566,8 +2566,8 @@ class HolooController extends Controller
 
 
 
-                if (isset($item->product_reference)) {
-                    $HoloID= $item->product_reference;
+                if (isset($item->product_upc)) {
+                    $HoloID= $item->product_upc;
                     $HoloID=str_replace("\r\n","",$HoloID);
                     if($HoloID){
 

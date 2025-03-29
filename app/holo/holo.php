@@ -76,7 +76,7 @@ class Holo extends Module
         foreach ($order->getProducts() as $product) {
             $orderData['items'][] = [
                 'product_name' => $product['product_name'],
-                'product_reference' => $product['product_reference'],
+                'product_upc' => $product['product_upc'],
                 'price' => $product['unit_price_tax_incl'],
                 'quantity' => $product['product_quantity'],
                 'total' => $product['unit_price_tax_incl'] * $product['product_quantity'],

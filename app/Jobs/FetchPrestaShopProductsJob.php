@@ -46,7 +46,7 @@ class FetchPrestaShopProductsJob implements ShouldQueue
         try {
             $products = $this->getProductsWithQuantities();
             $productsArray = $products instanceof \Illuminate\Support\Collection ? $products->toArray() : $products;
-            $holooCodes = array_column($productsArray, 'reference');
+            $holooCodes = array_column($productsArray, 'upc');
             // remove null array member for $holooCodes
             $holooCodes=array_filter($holooCodes);
 
@@ -60,7 +60,7 @@ class FetchPrestaShopProductsJob implements ShouldQueue
 
             foreach ($products as $product) {
 
-                $aCode = $product['reference'] ?? null;
+                $aCode = $product['upc'] ?? null;
 
                 if ($aCode && isset($holooProducts[$aCode])) {
                     if($aCode!="0202002"){
