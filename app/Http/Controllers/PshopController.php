@@ -625,6 +625,7 @@ class PshopController extends Controller
 
                 $holooProduct = $holooProducts[(string)$holooCode];
 
+                dd($config);
 
                 $data = $PSProduct;
                 // به‌روزرسانی نام محصول در صورت فعال بودن تنظیم
