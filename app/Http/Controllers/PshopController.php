@@ -607,8 +607,8 @@ class PshopController extends Controller
                 }
             }
             $holooController = resolve(\App\Http\Controllers\HolooController::class);
-            dd("ok");
             $holooProduct = $holooController->GetMultiProductHoloo($HolooIDs);
+            dd("ok");
 
 
             if (!isset(json_decode($holooProduct)->data->product)) {
