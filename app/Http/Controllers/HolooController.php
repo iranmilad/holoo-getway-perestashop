@@ -27,7 +27,7 @@ class HolooController extends Controller
     {
 
         $user = auth()->user();
-
+        dd($user);
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
         if ($user->cloudTokenExDate > Carbon::now() and $force == false) {
