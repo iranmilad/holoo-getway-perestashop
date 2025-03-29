@@ -607,7 +607,7 @@ class PshopController extends Controller
             }
 
             $holooProduct = app('app\\Http\\Controllers\\HolooController')->GetMultiProductHoloo($HolooIDs);
-
+            dd($holooProduct);
             if (!isset(json_decode($holooProduct)->data->product)) {
                 Log::alert("Holoo code not found for Holoo ID '" . implode(',', $HolooIDs) . "' at webhook received");
                 Log::alert(json_encode($holooProduct));
@@ -625,7 +625,7 @@ class PshopController extends Controller
 
                 $holooProduct = $holooProducts[(string)$holooCode];
 
-                dd($config);
+
 
                 $data = $PSProduct;
                 // به‌روزرسانی نام محصول در صورت فعال بودن تنظیم
