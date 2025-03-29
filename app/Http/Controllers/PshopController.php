@@ -606,7 +606,7 @@ class PshopController extends Controller
                     $failures[] = $holooID;
                 }
             }
-
+            dd("ok");
             $holooController = resolve(\App\Http\Controllers\HolooController::class);
             $holooProduct = $holooController->GetMultiProductHoloo($HolooIDs);
 
