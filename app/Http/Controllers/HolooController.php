@@ -1325,7 +1325,7 @@ class HolooController extends Controller
         $userApiKey = $user->apiKey;
         $curl = curl_init();
         $holooCodes=implode(',', $holooCodes);
-        dd($holooCodes);
+
         curl_setopt_array($curl, array(
             CURLOPT_URL => 'https://myholoo.ir/api/Article/GetProducts?a_Code=' . $holooCodes,
             CURLOPT_RETURNTRANSFER => true,
