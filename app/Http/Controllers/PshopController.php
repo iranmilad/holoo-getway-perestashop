@@ -597,7 +597,7 @@ class PshopController extends Controller
             if (!$config) return $this->sendResponse('تنظیمات کاربر دریافت نشده است', Response::HTTP_OK, []);
 
             $PSProducts = $this->getProductsWithQuantities();
-            dd("ok");
+
 
             foreach ($HolooIDs as $holooID) {
                 $index_value = array_search($holooID, $HolooIDs);
@@ -606,7 +606,7 @@ class PshopController extends Controller
                     $failures[] = $holooID;
                 }
             }
-
+            dd("ok");
             $holooProduct = app('app\\Http\\Controllers\\HolooController')->GetMultiProductHoloo($HolooIDs);
 
             if (!isset(json_decode($holooProduct)->data->product)) {
