@@ -17,7 +17,6 @@ use App\Jobs\UpdateProductsUser;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Artisan;
-use App\Http\Controllers\HolooController;
 use App\Jobs\UpdateProductsVariationUser;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -607,8 +606,7 @@ class PshopController extends Controller
                 }
             }
 
-            $holooController = resolve(\App\Http\Controllers\HolooController::class);
-            $holooProduct = $holooController->GetMultiProductHoloo($HolooIDs);
+            $holooProduct = app('app\\Http\\Controllers\\HolooController')->GetMultiProductHoloo($HolooIDs);
 
             if (!isset(json_decode($holooProduct)->data->product)) {
                 Log::alert("Holoo code not found for Holoo ID '" . implode(',', $HolooIDs) . "' at webhook received");
