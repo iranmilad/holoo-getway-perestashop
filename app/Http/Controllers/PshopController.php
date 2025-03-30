@@ -2377,6 +2377,7 @@ class PshopController extends Controller
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // برای مواقعی که گواهی SSL معتبر نیست
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
                 $curlHandles[$key] = $ch;
                 curl_multi_add_handle($multiHandle, $ch);
             }
@@ -2400,8 +2401,9 @@ class PshopController extends Controller
                 }
                 $responses[$key] = json_decode($response, true);
                 curl_multi_remove_handle($multiHandle, $ch);
-                curl_close($ch);
                 dd("ok");
+                curl_close($ch);
+
             }
 
             // بستن Multi-Handle
