@@ -2406,7 +2406,7 @@ class PshopController extends Controller
 
             // بستن Multi-Handle
             curl_multi_close($multiHandle);
-
+            dd("ok");
             // پردازش نتایج
             $products = $responses['products']['products'] ?? [];
             $stockAvailables = $responses['stock']['stock_availables'] ?? [];
@@ -2424,7 +2424,7 @@ class PshopController extends Controller
                     'id_product_attribute' => $stock['id_product_attribute'] ?? null, // مقدار id_product_attribute
                 ]);
             });
-            dd("ok");
+
             return $result;
 
         } catch (\Exception $e) {
