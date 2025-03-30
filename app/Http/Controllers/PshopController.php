@@ -2377,7 +2377,6 @@ class PshopController extends Controller
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // برای مواقعی که گواهی SSL معتبر نیست
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
                 $curlHandles[$key] = $ch;
                 curl_multi_add_handle($multiHandle, $ch);
             }
