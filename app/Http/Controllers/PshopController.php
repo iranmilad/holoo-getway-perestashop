@@ -2377,6 +2377,7 @@ class PshopController extends Controller
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // برای مواقعی که گواهی SSL معتبر نیست
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
                 $curlHandles[$key] = $ch;
                 curl_multi_add_handle($multiHandle, $ch);
             }
@@ -2390,7 +2391,8 @@ class PshopController extends Controller
 
             // جمع‌آوری نتایج
             $responses = [];
-            dd($curlHandles); // بررسی مقدار هندل cURL
+            sleep(20);
+            //dd($curlHandles); // بررسی مقدار هندل cURL
             foreach ($curlHandles as $key => $ch) {
                 $response = curl_multi_getcontent($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
