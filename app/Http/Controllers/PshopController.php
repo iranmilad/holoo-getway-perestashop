@@ -2357,14 +2357,14 @@ class PshopController extends Controller
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
         curl_setopt($ch, CURLOPT_MAXREDIRS , 10);
-        curl_setopt($ch, CURLOPT_TIMEOUT , 0);
+        curl_setopt($ch, CURLOPT_TIMEOUT , 60);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION , true);
         curl_setopt($ch, CURLOPT_HTTP_VERSION , CURL_HTTP_VERSION_1_1);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        dd($response);
+
         if ($httpCode >= 400) {
             throw new \Exception("HTTP Error on $url: $httpCode");
         }
