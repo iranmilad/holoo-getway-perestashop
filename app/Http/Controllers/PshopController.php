@@ -555,7 +555,7 @@ class PshopController extends Controller
         set_time_limit(0);
         log::info($request->all());
         log::info("Webhook received");
-
+        dd("ok");
         $hook = new Webhook();
 
         if (isset($request->Table) && strtolower($request->Table) == "article" && ($request->MsgType == 1 || $request->MsgType == 0)) {
@@ -606,7 +606,7 @@ class PshopController extends Controller
                     $failures[] = $holooID;
                 }
             }
-            dd("ok");
+
             $holooController = resolve(\App\Http\Controllers\HolooController::class);
             $holooProduct = $holooController->GetMultiProductHoloo($HolooIDs);
 
