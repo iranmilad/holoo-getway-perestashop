@@ -2400,7 +2400,7 @@ class PshopController extends Controller
                     throw new \Exception("HTTP Error on $key endpoint: $httpCode");
                 }
                 $responses[$key] = json_decode($response, true);
-                var_dump($ch); // بررسی مقدار هندل cURL
+                dd($ch); // بررسی مقدار هندل cURL
                 curl_multi_remove_handle($multiHandle, $ch);
                 dd("ok");
                 curl_close($ch);
