@@ -2403,10 +2403,10 @@ class PshopController extends Controller
                 curl_multi_remove_handle($multiHandle, $ch);
                 curl_close($ch);
             }
-
+            dd("ok");
             // بستن Multi-Handle
             curl_multi_close($multiHandle);
-            dd("ok");
+
             // پردازش نتایج
             $products = $responses['products']['products'] ?? [];
             $stockAvailables = $responses['stock']['stock_availables'] ?? [];
