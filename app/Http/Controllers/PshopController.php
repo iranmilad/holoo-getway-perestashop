@@ -2390,7 +2390,7 @@ class PshopController extends Controller
 
             // جمع‌آوری نتایج
             $responses = [];
-            dd("ok");
+
             foreach ($curlHandles as $key => $ch) {
                 $response = curl_multi_getcontent($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -2424,7 +2424,7 @@ class PshopController extends Controller
                     'id_product_attribute' => $stock['id_product_attribute'] ?? null, // مقدار id_product_attribute
                 ]);
             });
-
+            dd("ok");
             return $result;
 
         } catch (\Exception $e) {
