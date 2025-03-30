@@ -2391,7 +2391,7 @@ class PshopController extends Controller
 
             // جمع‌آوری نتایج
             $responses = [];
-
+            dd($curlHandles); // بررسی مقدار هندل cURL
             foreach ($curlHandles as $key => $ch) {
                 $response = curl_multi_getcontent($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -2400,9 +2400,8 @@ class PshopController extends Controller
                     throw new \Exception("HTTP Error on $key endpoint: $httpCode");
                 }
                 $responses[$key] = json_decode($response, true);
-                dd($httpCode); // بررسی مقدار هندل cURL
+
                 curl_multi_remove_handle($multiHandle, $ch);
-                dd("ok");
                 curl_close($ch);
 
             }
