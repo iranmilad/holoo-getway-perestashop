@@ -555,7 +555,7 @@ class PshopController extends Controller
         set_time_limit(0);
         log::info($request->all());
         log::info("Webhook received");
-        dd("ok");
+
         $hook = new Webhook();
 
         if (isset($request->Table) && strtolower($request->Table) == "article" && ($request->MsgType == 1 || $request->MsgType == 0)) {
@@ -595,7 +595,7 @@ class PshopController extends Controller
             $config = json_decode($user->config);
 
             if (!$config) return $this->sendResponse('تنظیمات کاربر دریافت نشده است', Response::HTTP_OK, []);
-
+            dd("ok");
             $PSProducts = $this->getProductsWithQuantities();
 
 
