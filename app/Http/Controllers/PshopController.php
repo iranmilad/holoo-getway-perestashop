@@ -2356,22 +2356,44 @@ class PshopController extends Controller
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-        curl_setopt($ch, CURLOPT_MAXREDIRS , 10);
-        curl_setopt($ch, CURLOPT_TIMEOUT , 60);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION , true);
-        curl_setopt($ch, CURLOPT_HTTP_VERSION , CURL_HTTP_VERSION_1_1);
+        // تنظیمات برای داده‌های حجیم
+        curl_setopt($ch, CURLOPT_BUFFERSIZE, 1024 * 16); // بافر 16 کیلوبایتی برای جلوگیری از پرشدن حافظه
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$response) {
+            $response .= $chunk;
+            return strlen($chunk);
+        });
 
-        $response = curl_exec($ch);
+        // جلوگیری از مشکلات ریدایرکت
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+
+        $response = '';
+        curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        log::info($response);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
+        // بررسی خطاهای cURL
+        if ($curlError) {
+            throw new \Exception("cURL Error: $curlError");
+        }
+
+        // بررسی خطای HTTP
         if ($httpCode >= 400) {
             throw new \Exception("HTTP Error on $url: $httpCode");
         }
 
-        return json_decode($response, true);
+        // تبدیل خروجی به JSON
+        $jsonData = json_decode($response, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception("JSON Decode Error: " . json_last_error_msg());
+        }
+
+        return $jsonData;
     }
+
 
     public function getProductsWithQuantities()
     {
