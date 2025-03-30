@@ -597,7 +597,7 @@ class PshopController extends Controller
             if (!$config) return $this->sendResponse('تنظیمات کاربر دریافت نشده است', Response::HTTP_OK, []);
             $PSProducts = $this->getProductsWithQuantities();
 
-            dd("ok");
+
 
             foreach ($HolooIDs as $holooID) {
                 $index_value = array_search($holooID, $HolooIDs);
@@ -2390,6 +2390,7 @@ class PshopController extends Controller
 
             // جمع‌آوری نتایج
             $responses = [];
+            dd("ok");
             foreach ($curlHandles as $key => $ch) {
                 $response = curl_multi_getcontent($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
