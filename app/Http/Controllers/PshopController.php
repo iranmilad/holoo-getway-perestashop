@@ -2382,7 +2382,7 @@ class PshopController extends Controller
         try {
             $productsResponse = $this->fetchData($apiUrl . '/api/products?output_format=JSON&display=full', $headers);
             $stockResponse = $this->fetchData($apiUrl . '/api/stock_availables?output_format=JSON&display=full', $headers);
-            dd($stockResponse);
+
             $products = $productsResponse['products'] ?? [];
             $stockAvailables = $stockResponse['stock_availables'] ?? [];
 
