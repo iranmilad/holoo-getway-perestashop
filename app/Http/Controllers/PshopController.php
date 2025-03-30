@@ -2373,7 +2373,7 @@ class PshopController extends Controller
         $apiKey = env('API_KEY');
         $headers = ['Authorization: Basic ' . base64_encode($apiKey . ':')];
 
-        try {
+
             $productsResponse = $this->fetchData($apiUrl . '/api/products?output_format=JSON&display=full', $headers);
             $stockResponse = $this->fetchData($apiUrl . '/api/stock_availables?output_format=JSON&display=full', $headers);
 
@@ -2394,9 +2394,7 @@ class PshopController extends Controller
 
             return $result;
 
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error fetching data', 'message' => $e->getMessage()], 500);
-        }
+
     }
 
 
