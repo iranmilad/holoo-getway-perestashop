@@ -30,9 +30,6 @@ class Holo extends Module
 
         $order = $params['order'];
         $paidStatus = Configuration::get('PS_OS_PAYMENT');
-        // if ($order->current_state != $paidStatus) {
-        //     return;
-        // }
 
         $webhookBaseUrl = Configuration::get('WEBHOOK_BASE_URL');
         $webhookUrl = rtrim($webhookBaseUrl, '/') . '/api/wcInvoicePayed';
@@ -74,9 +71,18 @@ class Holo extends Module
         ];
 
         foreach ($order->getProducts() as $product) {
+            // بررسی مقدار UPC و جایگزینی مقدار مناسب
+            $productUPC = !empty($product['upc']) ? $product['upc'] : (!empty($product['ean13']) ? $product['ean13'] : null);
+
+            // اگر UPC وجود نداشته باشد، مقدار کد مرجع ارسال شود
+            if (!$productUPC && !empty($product['reference'])) {
+                $productUPC = $product['reference'];
+                PrestaShopLogger::addLog("Warning: Product ID {$product['id_product']} has no UPC. Sending reference instead.", 2);
+            }
+
             $orderData['items'][] = [
                 'product_name' => $product['product_name'],
-                'product_upc' => $product['product_upc'],
+                'product_upc' => $productUPC,
                 'price' => $product['unit_price_tax_incl'],
                 'quantity' => $product['product_quantity'],
                 'total' => $product['unit_price_tax_incl'] * $product['product_quantity'],
@@ -89,6 +95,7 @@ class Holo extends Module
             PrestaShopLogger::addLog("Failed to send webhook for Order ID: {$order->id}", 3);
         }
     }
+
 
     public function install()
     {

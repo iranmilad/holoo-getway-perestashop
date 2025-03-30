@@ -564,7 +564,7 @@ class PshopController extends Controller
             $HolooDb = $Dbname[1];
             $failures = [];
 
-            $user = User::first();
+            $user = User::where("holooCustomerID",$HolooUser)->first();
             $hook->content = json_encode($request->all());
             $hook->user_id = $user->id ?? null;
 
