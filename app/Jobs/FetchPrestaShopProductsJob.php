@@ -63,7 +63,7 @@ class FetchPrestaShopProductsJob implements ShouldQueue
                 $aCode = $product['upc'] ?? null;
 
                 if ($aCode && isset($holooProducts[$aCode])) {
-                    if($aCode!="0202002"){
+                    if($aCode!="0207085"){
                         Log::info("Product ID: {$product['id']} fetched from PrestaShop.");
                         continue;
                     }
