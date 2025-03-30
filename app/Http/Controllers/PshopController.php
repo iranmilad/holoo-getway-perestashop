@@ -2363,7 +2363,7 @@ class PshopController extends Controller
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        dd($response);
+        dd($httpCode);
         curl_close($ch);
 
         if ($httpCode >= 400) {
