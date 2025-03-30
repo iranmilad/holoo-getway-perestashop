@@ -2363,6 +2363,7 @@ class PshopController extends Controller
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        dd($httpCode);
         curl_close($ch);
 
         if ($httpCode >= 400) {
@@ -2377,7 +2378,7 @@ class PshopController extends Controller
         $apiUrl = env('API_URL');
         $apiKey = env('API_KEY');
         $headers = ['Authorization: Basic ' . base64_encode($apiKey . ':')];
-        dd("ok");
+
         try {
             $productsResponse = $this->fetchData($apiUrl . '/api/products?output_format=JSON&display=full', $headers);
             $stockResponse = $this->fetchData($apiUrl . '/api/stock_availables?output_format=JSON&display=full', $headers);
