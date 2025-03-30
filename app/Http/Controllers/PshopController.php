@@ -595,9 +595,9 @@ class PshopController extends Controller
             $config = json_decode($user->config);
 
             if (!$config) return $this->sendResponse('تنظیمات کاربر دریافت نشده است', Response::HTTP_OK, []);
-            dd("ok");
             $PSProducts = $this->getProductsWithQuantities();
 
+            dd("ok");
 
             foreach ($HolooIDs as $holooID) {
                 $index_value = array_search($holooID, $HolooIDs);
