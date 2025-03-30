@@ -2354,7 +2354,7 @@ class PshopController extends Controller
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -2373,7 +2373,7 @@ class PshopController extends Controller
         $apiKey = env('API_KEY');
         $headers = ['Authorization: Basic ' . base64_encode($apiKey . ':')];
 
-
+        try {
             $productsResponse = $this->fetchData($apiUrl . '/api/products?output_format=JSON&display=full', $headers);
             $stockResponse = $this->fetchData($apiUrl . '/api/stock_availables?output_format=JSON&display=full', $headers);
 
@@ -2394,7 +2394,9 @@ class PshopController extends Controller
 
             return $result;
 
-
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error fetching data', 'message' => $e->getMessage()], 500);
+        }
     }
 
 
