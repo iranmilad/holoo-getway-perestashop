@@ -528,8 +528,8 @@ class PshopController extends Controller
         ini_set('max_execution_time', 0); // 120 (seconds) = 2 Minutes
         set_time_limit(0);
 
-
-        app('App\Http\Controllers\HolooController')->getNewToken();
+        $holooController = resolve(\App\Http\Controllers\HolooController::class);
+        $holooController->getNewToken();
         $cf=(object)$user->config;
         UpdateProductFind::dispatch((object)["queue_server"=>$user->queue_server,"id"=>$user->id,"siteUrl"=>$user->siteUrl,"serial"=>$user->serial,"apiKey"=>$user->apiKey,"holooDatabaseName"=>$user->holooDatabaseName,"consumerKey"=>$user->consumerKey,"consumerSecret"=>$user->consumerSecret,"cloudTokenExDate"=>$user->cloudTokenExDate,"cloudToken"=>$user->cloudToken, "holo_unit"=>$user->holo_unit, "plugin_unit"=>$user->plugin_unit,"user_traffic"=>$user->user_traffic,"poshak"=>$user->poshak],$cf->product_cat ?? null,$cf,1)->onConnection($user->queue_server)->onQueue("default");
         return $this->sendResponse('درخواست به روزرسانی محصولات با موفقیت دریافت شد ', Response::HTTP_OK, ["result"=>["msg_code"=>0]]);
