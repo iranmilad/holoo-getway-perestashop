@@ -2398,10 +2398,10 @@ class PshopController extends Controller
                 if ($httpCode >= 400) {
                     throw new \Exception("HTTP Error on $key endpoint: $httpCode");
                 }
-                dd("ok");
                 $responses[$key] = json_decode($response, true);
                 curl_multi_remove_handle($multiHandle, $ch);
                 curl_close($ch);
+                dd("ok");
             }
 
             // بستن Multi-Handle
