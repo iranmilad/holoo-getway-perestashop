@@ -2348,94 +2348,56 @@ class PshopController extends Controller
         return $this->sendResponse('تخلیه صف با موفقیت انجام شد', Response::HTTP_OK,[]);
     }
 
+    private function fetchData($url, $headers)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 400) {
+            throw new \Exception("HTTP Error on $url: $httpCode");
+        }
+
+        return json_decode($response, true);
+    }
+
     public function getProductsWithQuantities()
     {
-        // URL و API Key از فایل env خوانده می‌شوند
         $apiUrl = env('API_URL');
         $apiKey = env('API_KEY');
+        $headers = ['Authorization: Basic ' . base64_encode($apiKey . ':')];
 
         try {
-            // آدرس‌های API
-            $endpoints = [
-                'products' => $apiUrl . '/api/products?output_format=JSON&display=full',
-                'stock' => $apiUrl . '/api/stock_availables?output_format=JSON&display=full',
-            ];
+            $productsResponse = $this->fetchData($apiUrl . '/api/products?output_format=JSON&display=full', $headers);
+            $stockResponse = $this->fetchData($apiUrl . '/api/stock_availables?output_format=JSON&display=full', $headers);
 
-            // تنظیمات header
-            $headers = [
-                'Authorization: Basic ' . base64_encode($apiKey . ':')
-            ];
+            $products = $productsResponse['products'] ?? [];
+            $stockAvailables = $stockResponse['stock_availables'] ?? [];
 
-            // Multi-Handle
-            $multiHandle = curl_multi_init();
-            $curlHandles = [];
-
-            // ایجاد هندل‌های cURL برای هر درخواست
-            foreach ($endpoints as $key => $url) {
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $url);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // برای مواقعی که گواهی SSL معتبر نیست
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-                $curlHandles[$key] = $ch;
-                curl_multi_add_handle($multiHandle, $ch);
-            }
-
-            // اجرای درخواست‌ها به صورت موازی
-            $running = null;
-            do {
-                curl_multi_exec($multiHandle, $running);
-                curl_multi_select($multiHandle); // برای بهبود کارایی
-            } while ($running > 0);
-
-            // جمع‌آوری نتایج
-            $responses = [];
-            sleep(20);
-            //dd($curlHandles); // بررسی مقدار هندل cURL
-            foreach ($curlHandles as $key => $ch) {
-                $response = curl_multi_getcontent($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-                if ($httpCode >= 400) {
-                    throw new \Exception("HTTP Error on $key endpoint: $httpCode");
-                }
-                $responses[$key] = json_decode($response, true);
-
-                curl_multi_remove_handle($multiHandle, $ch);
-                curl_close($ch);
-
-            }
-
-            // بستن Multi-Handle
-            curl_multi_close($multiHandle);
-
-            // پردازش نتایج
-            $products = $responses['products']['products'] ?? [];
-            $stockAvailables = $responses['stock']['stock_availables'] ?? [];
-
-            // ایجاد یک آرایه برای نگاشت موجودی‌ها
             $stockMap = collect($stockAvailables)->keyBy('id_product');
 
-            // ترکیب اطلاعات محصولات و موجودی‌ها
             $result = collect($products)->map(function ($product) use ($stockMap) {
                 $stock = $stockMap->get($product['id']);
 
                 return array_merge($product, [
-                    'quantity' => $stock['quantity'] ?? 0, // مقدار quantity
-                    'stock_id' => $stock['id'] ?? null,    // مقدار id مربوط به quantity
-                    'id_product_attribute' => $stock['id_product_attribute'] ?? null, // مقدار id_product_attribute
+                    'quantity' => $stock['quantity'] ?? 0,
+                    'stock_id' => $stock['id'] ?? null,
+                    'id_product_attribute' => $stock['id_product_attribute'] ?? null,
                 ]);
             });
 
             return $result;
 
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'An error occurred while fetching data.',
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['error' => 'Error fetching data', 'message' => $e->getMessage()], 500);
         }
     }
+
 
 }
