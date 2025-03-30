@@ -30,7 +30,9 @@ class ProcessPrestaShopProductJob implements ShouldQueue
 
     public function handle()
     {
+        Log::info("Product ID: {$this->productData['id']} start check price and quantity on PrestaShop.");
         try {
+
             $needsUpdate = false;
 
             // بررسی تغییرات قیمت و مقدار
