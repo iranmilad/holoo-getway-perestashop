@@ -68,7 +68,7 @@ class FetchPrestaShopProductsJob implements ShouldQueue
                         continue;
                     }
                     //Log::info(json_encode($holooProducts[$aCode]));
-                    ProcessPrestaShopProductJob::dispatch($product,(array) $holooProducts[$aCode]);
+                    ProcessPrestaShopProductJob::dispatch($product,(array) $holooProducts[$aCode])->onConnection($this->user->queue_server)->onQueue("default");
                 }
             }
         } catch (Exception $e) {
