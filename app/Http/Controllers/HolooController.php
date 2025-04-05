@@ -2483,7 +2483,7 @@ class HolooController extends Controller
             }
 
             if($user->fix_customer_account==false)
-                $custid = $this->getHolooCustomerID($orderInvoice->customer, $orderInvoice->customer_id);
+                $custid = $this->getHolooCustomerID($orderInvoice->customer, $orderInvoice->customer->id);
             else{
                 $custid =$user->customer_account;
             }
