@@ -2461,9 +2461,8 @@ class HolooController extends Controller
                 ['updated_at', '<', Carbon::now()->subMinute(2)]
             ]);
         })->where(function($query) {
-            $query->where('invoiceStatus', 'processing')
-                  ->orWhere('invoiceStatus', 'completed');
-        })->whereIn("status", [null, "ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید", "ثبت فاکتور بدلیل عدم یافت انجام نشد","ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر"])
+            $query->where('invoiceStatus', 'completed');
+        })->whereIn("status", [null])
           //->whereNull("holooInvoice")
           ->get()->all();
 
