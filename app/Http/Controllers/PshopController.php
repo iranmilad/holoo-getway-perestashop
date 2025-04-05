@@ -391,6 +391,7 @@ class PshopController extends Controller
                         <width><![CDATA[{$params['width']}]]></width>
                         <height><![CDATA[{$params['height']}]]></height>
                         <depth><![CDATA[{$params['depth']}]]></depth>
+                        <id_category_default><![CDATA[{$params['id_category_default']}]]></id_category_default>
                         <id_tax_rules_group><![CDATA[{$params['id_tax_rules_group']}]]></id_tax_rules_group>
                         <location><![CDATA[{$params['location']}]]></location>
                         <ean13><![CDATA[{$params['ean13']}]]></ean13>
@@ -403,6 +404,12 @@ class PshopController extends Controller
                         <show_price><![CDATA[{$params['show_price']}]]></show_price>
                         <state><![CDATA[{$params['state']}]]></state>
                         <link_rewrite><![CDATA[{$params['link_rewrite']}]]></link_rewrite>
+                        <categories>
+                            <category>
+                                <id><![CDATA[{$params['category_id']}]]></id>
+                            </category>
+                        </categories>
+        
                     </product>
                 </prestashop>";
 
