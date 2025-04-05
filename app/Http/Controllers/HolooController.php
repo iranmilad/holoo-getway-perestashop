@@ -919,7 +919,7 @@ class HolooController extends Controller
                         'apiname' => 'InvoicePost',
                         'dto' => array(
                             'invoiceinfo' => array(
-                                'id' => (int)$orderInvoice->input("id"), //$oreder->id
+                                'id' => (int)$invoice->order_id, //$oreder->id
                                 'Type' => 1, //1 faktor frosh 2 pish factor, 3 sefaresh =>$type
                                 'kind' => 4,
                                 'Date' => $DateString->format('Y-m-d'),

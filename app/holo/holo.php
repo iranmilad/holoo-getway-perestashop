@@ -60,7 +60,7 @@ class Holo extends Module
                 'first_name' => $customer->firstname,
                 'last_name' => $customer->lastname,
                 'email' => $customer->email,
-                'phone' => $address->phone ?: $address->phone_mobile,
+                'phone' => $address->phone_mobile ?? $address->phone,
                 'address' => $address->address1 . ' ' . $address->address2,
                 'city' => $address->city,
                 'state' => State::getNameById($address->id_state),
