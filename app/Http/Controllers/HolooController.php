@@ -2556,7 +2556,7 @@ class HolooController extends Controller
                             $HoloID=$holooPoshak[0];
                             $HoloIDProp= $holooPoshak[1];
                         }
-                        $total = $item->product_price * $item->product_quantity;
+                        $total = $item->price * $item->quantity;
 
                         if ($payment->vat) {
                             $lazy += $total * 10 / 100;
@@ -2566,13 +2566,13 @@ class HolooController extends Controller
                             $items[] = array(
                                 'id' => (int)$HoloID,
                                 'Productid' => $HoloID,
-                                'few' => $item->product_quantity,
-                                'price' => $item->product_price,
+                                'few' => $item->quantity,
+                                'price' => $item->price,
                                 'discount' => '0',
                                 'poshakinfo' => array(
                                     (object)array(
                                         "id"=> $HoloIDProp,
-                                        "few"=> $item->product_quantity
+                                        "few"=> $item->quantity
                                     )
                                 ),
                                 'levy' => ($payment->vat) ? 10 : 0,
@@ -2584,8 +2584,8 @@ class HolooController extends Controller
                             $items[] = array(
                                 'id' => (int)$HoloID,
                                 'Productid' => $HoloID,
-                                'few' => $item->product_quantity,
-                                'price' => $item->product_price,
+                                'few' => $item->quantity,
+                                'price' => $item->price,
                                 'discount' => '0',
                                 'levy' => ($payment->vat) ? 10 : 0,
                                 'scot' => ($payment->vat) ? 0 : 0,
