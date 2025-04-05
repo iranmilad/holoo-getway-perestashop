@@ -56,7 +56,12 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
         ],
-
+        'asset' => [
+            'driver' => 'local',
+            'root' => storage_path('app/asset'),
+            'url' => env('APP_URL') . '/storage/asset',
+            'visibility' => 'private',
+        ],
     ],
 
     /*
