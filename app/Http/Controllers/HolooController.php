@@ -782,7 +782,7 @@ class HolooController extends Controller
         if (isset($config->save_sale_invoice) and $config->save_sale_invoice != "0") {
 
 
-            $_data = (object) $orderInvoice->input("created_at");
+            $_data = (object) $invoice->created_at;
 
             // اطمینان از وجود مقدار `timezone` در داده‌ها
             $timezone = $_data->timezone ?? 'UTC'; // مقدار پیش‌فرض اگر `timezone` تعریف نشده باشد
