@@ -2455,7 +2455,15 @@ class HolooController extends Controller
 
         log::info("run test");
         log::info(Carbon::now()->subMinute(600));
-        $invoices = invoice::whereIn("status", [null, "ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید", "ثبت فاکتور بدلیل عدم یافت انجام نشد","ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر"])
+        $invoices = invoice::where(function($query) {
+            $query->where([
+                ['updated_at', '>', Carbon::now()->subMinute(600)],
+                ['updated_at', '<', Carbon::now()->subMinute(2)]
+            ]);
+        })->where(function($query) {
+            $query->where('invoiceStatus', 'processing')
+                  ->orWhere('invoiceStatus', 'completed');
+        })->whereIn("status", [null, "ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید", "ثبت فاکتور بدلیل عدم یافت انجام نشد","ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر"])
           //->whereNull("holooInvoice")
           ->get()->all();
 
