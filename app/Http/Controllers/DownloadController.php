@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use App\Models\User;
+use App\Models\Invoice;
 use Illuminate\Http\Request;
 use App\Exports\ReportExport;
 use Illuminate\Http\Response;
+use App\Exports\InvoiceExport;
 use App\Jobs\UpdateProductFind;
 use App\Exports\ReportMetaExport;
 use Illuminate\Support\Facades\Log;
@@ -882,4 +884,43 @@ class DownloadController extends Controller
 
         return $this->sendResponse("Maximum execution time test finish Successfully", Response::HTTP_OK,"execution time");
     }
+
+    public function exportInvoicesLastWeek()
+    {
+        // ورود خودکار به اولین کاربر (در حالت واقعی، آیدی را بفرست)
+        $user = User::first();
+        Auth::login($user);
+        $user_id = $user->id;
+    
+        // فقط فاکتورهای ۷ روز اخیر
+        $sevenDaysAgo = Carbon::now()->subDays(7);
+    
+        $invoices = Invoice::where('user_id', $user_id)
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->get(['invoiceId', 'status']);
+    
+        // آماده‌سازی داده برای خروجی اکسل
+        $rows = [['invoiceId', 'status']];
+        foreach ($invoices as $invoice) {
+            $rows[] = [
+                $invoice->invoiceId,
+                $invoice->status,
+            ];
+        }
+    
+        if (count($rows) > 1) {
+            $export = new InvoiceExport($rows);
+            $filename = "invoices_{$user_id}_" . now()->format('Ymd_His') . ".xls";
+            $path = "download/" . $filename;
+    
+            Excel::store($export, $path, 'asset');
+    
+            return response()->download(storage_path("app/asset/{$path}"), $filename, [
+                'Content-Type' => 'application/vnd.ms-excel',
+            ]);
+        }
+    
+        return response()->json(['message' => 'هیچ فاکتوری در ۷ روز گذشته ثبت نشده است.'], 404);
+    }
+
 }
