@@ -404,11 +404,6 @@ class PshopController extends Controller
                         <show_price><![CDATA[{$params['show_price']}]]></show_price>
                         <state><![CDATA[{$params['state']}]]></state>
                         <link_rewrite><![CDATA[{$params['link_rewrite']}]]></link_rewrite>
-                        <categories>
-                            <category>
-                                <id><![CDATA[{$params['category_id']}]]></id>
-                            </category>
-                        </categories>
         
                     </product>
                 </prestashop>";
