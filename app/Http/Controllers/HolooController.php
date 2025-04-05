@@ -517,7 +517,7 @@ class HolooController extends Controller
             $DateString->setTimezone('Asia/Tehran');
 
             if (!$orderInvoice->save_pre_sale_invoice || $orderInvoice->save_pre_sale_invoice == 0) {
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت پیش فاکتور انجام نشد');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت پیش فاکتور انجام نشد');
                 return $this->sendResponse('ثبت پیش فاکتور انجام نشد', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
             }
             else {
@@ -530,7 +530,7 @@ class HolooController extends Controller
             }
             if (!$custid) {
                 log::info("کد مشتری یافت نشد");
-                $this->InvoiceChangeStatus($invoice->order_id, "ثبت پیش فاکتور انجام نشد");
+                $this->InvoiceChangeStatus($orderInvoice->order_id, "ثبت پیش فاکتور انجام نشد");
                 return $this->sendResponse("ثبت پیش فاکتور انجام نشد", Response::HTTP_BAD_REQUEST, ["result" => ["msg_code" => 0]]);
             }
 
@@ -546,7 +546,7 @@ class HolooController extends Controller
                 $payment = (object) $orderInvoice->payment;
             }
             if (!isset($orderInvoice->payment) or !(array)$orderInvoice->payment or !isset($orderInvoice->payment->{$orderInvoice->payment_method})) {
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت پیش فاکتور انجام نشد.روش پرداخت نامعتبر');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت پیش فاکتور انجام نشد.روش پرداخت نامعتبر');
                 return $this->sendResponse('ثبت پیش فاکتور انجام نشد.روش پرداخت نامعتبر', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
             }
             else{
@@ -555,7 +555,7 @@ class HolooController extends Controller
             }
 
             if (!isset($payment->{$orderInvoice->payment_method})){
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
                 return $this->sendResponse('ثبت فاکتور انجام نشد.روش پرداخت در پلاگین نامعتبر', Response::HTTP_BAD_REQUEST, ["result" => ["msg_code" => 0]]);
             }
 
@@ -565,7 +565,7 @@ class HolooController extends Controller
             $orderInvoice = $invoice->invoice;
             //$fetchAllWCProds=app('App\Http\Controllers\PshopController')->fetchAllWCProds(true);
             if(!is_object($orderInvoice)){
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت پیش فاکتور بدلیل عدم یافت انجام نشد');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت پیش فاکتور بدلیل عدم یافت انجام نشد');
                 return $this->sendResponse('ثبت پیش فاکتور بدلیل عدم یافت انجام نشد', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
             }
 
@@ -627,7 +627,7 @@ class HolooController extends Controller
 
                 }
                 elseif($orderInvoice->invoice_items_no_holo_code){
-                    $this->InvoiceChangeStatus($invoice->order_id, 'ثبت پیش فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت پیش فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                     return $this->sendResponse('ثبت پیش فاکتور بدلیل ایتم فاقد کد هلو انجام نشد', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
                 }
 
@@ -733,11 +733,11 @@ class HolooController extends Controller
                 log::info(json_encode($response));
                 if (isset($response->success) and $response->success) {
                     $this->recordLog("Invoice Registration", $user->siteUrl, "Invoice Registration finish succsessfuly");
-                    $this->InvoiceChangeStatus($invoice->order_id, 'ثبت سفارش فروش انجام شد');
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت سفارش فروش انجام شد');
                     return $this->sendResponse('ثبت سفارش فروش انجام شد', Response::HTTP_OK, ["result" => ["msg_code" => 1]]);
                 }
                 else {
-                    $this->InvoiceChangeStatus($invoice->order_id, 'خطا در ثبت سفارش');
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, 'خطا در ثبت سفارش');
                     $invoice = new Invoice();
                     $invoice->invoice = json_encode(['data' => $data]);
                     $invoice->user_id = $user->id;
@@ -750,10 +750,10 @@ class HolooController extends Controller
 
                 return $this->sendResponse($response->message, Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
             }
-            $this->InvoiceChangeStatus($invoice->order_id, 'اقلام سفارش یافت نشد');
+            $this->InvoiceChangeStatus($orderInvoice->order_id, 'اقلام سفارش یافت نشد');
             return $this->sendResponse('اقلام سفارش یافت نشد', Response::HTTP_OK, ["result" => ["msg_code" => 0,"item"=>$orderInvoice]]);
         }
-        $this->InvoiceChangeStatus($invoice->order_id, 'ثبت پیش فاکتور خاموش است');
+        $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت پیش فاکتور خاموش است');
         return $this->sendResponse('ثبت پیش فاکتور خاموش است', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
     }
 
@@ -797,12 +797,12 @@ class HolooController extends Controller
 
 
             if (!isset($config->payment)){
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت در پلاگین نامعتبر');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت در پلاگین نامعتبر');
                 return $this->sendResponse('ثبت فاکتور انجام نشد.روش پرداخت در پلاگین نامعتبر', Response::HTTP_GATEWAY_TIMEOUT, ["result" => ["msg_code" => 0]]);
             }
 
             if (!isset($config->payment->{$orderInvoice->payment_method})){
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
                 return $this->sendResponse('ثبت فاکتور انجام نشد.روش پرداخت در پلاگین نامعتبر',  Response::HTTP_GATEWAY_TIMEOUT, ["result" => ["msg_code" => 0]]);
             }
 
@@ -810,7 +810,7 @@ class HolooController extends Controller
 
             $customerBilling= (object)$orderInvoice->customer;
             if(!isset($customerBilling->phone)){
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.فاکتور ارسالی وردپرس فاقد شماره موبایل است');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور انجام نشد.فاکتور ارسالی وردپرس فاقد شماره موبایل است');
                 return $this->sendResponse('ثبت فاکتور انجام نشد.فاکتور ارسالی وردپرس فاقد شماره موبایل است', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
             }
 
@@ -822,7 +822,7 @@ class HolooController extends Controller
 
             if (!$custid) {
                 log::info("به دلیل مشکلی در فرایند ثبت مشتری در کلاد فرایند دچار خطای گردید و برای ادامه کار کد مشتری یافت نشد");
-                $this->InvoiceChangeStatus($invoice->order_id, " ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید جهت رفع مشکل به لاگ سرور مراجعه کنید");
+                $this->InvoiceChangeStatus($orderInvoice->order_id, " ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید جهت رفع مشکل به لاگ سرور مراجعه کنید");
                 return $this->sendResponse("  ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید جهت رفع مشکل به لاگ سرور مراجعه کنید",Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
             }
 
@@ -891,7 +891,7 @@ class HolooController extends Controller
                         $sum_total += $total;
                     }
                     elseif(isset($config->invoice_items_no_holo_code) and $config->invoice_items_no_holo_code==0){
-                        $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
+                        $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                         return $this->sendResponse('ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
                     }
                     else{
@@ -900,7 +900,7 @@ class HolooController extends Controller
 
                 }
                 elseif(isset($config->invoice_items_no_holo_code) and $config->invoice_items_no_holo_code==0){
-                    $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                     return $this->sendResponse('ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد', Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
                 }
 
@@ -920,7 +920,7 @@ class HolooController extends Controller
                         'apiname' => 'InvoicePost',
                         'dto' => array(
                             'invoiceinfo' => array(
-                                'id' => (int)$invoice->order_id, //$oreder->id
+                                'id' => (int)$orderInvoice->order_id, //$oreder->id
                                 'Type' => 1, //1 faktor frosh 2 pish factor, 3 sefaresh =>$type
                                 'kind' => 4,
                                 'Date' => $DateString->format('Y-m-d'),
@@ -975,8 +975,8 @@ class HolooController extends Controller
                 log::info(json_encode($response));
                 curl_close($curl);
                 if (isset($response->success) and $response->success) {
-                    $this->InvoiceChangeStatus($invoice->order_id, 'ثبت سفارش فروش انجام شد');
-                    Invoice::where(['invoiceId'=>$invoice->order_id])
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت سفارش فروش انجام شد');
+                    Invoice::where(['invoiceId'=>$orderInvoice->order_id])
                     ->update([
                     'holooInvoice' => $data,
                     ]);
@@ -987,8 +987,8 @@ class HolooController extends Controller
                     if ($response->message=="\u0634\u0646\u0627\u0633\u0647 \u0633\u0645\u062a \u06a9\u0644\u0627\u06cc\u0646\u062a \u062a\u06a9\u0631\u0627\u0631\u06cc \u0627\u0633\u062a"){
                         return $this->sendResponse('ثبت سفارش فروش انجام شد', Response::HTTP_OK, ["result" => ["msg_code" => 1]]);
                     }
-                    $this->InvoiceChangeStatus($invoice->order_id, json_encode([$response->message]));
-                    Invoice::where(['invoiceId'=>$invoice->order_id])
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, json_encode([$response->message]));
+                    Invoice::where(['invoiceId'=>$orderInvoice->order_id])
                     ->update([
                         'holooInvoice' => $data
                     ]);
@@ -1001,7 +1001,7 @@ class HolooController extends Controller
                 return $this->sendResponse($response->message, Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
             }
             else{
-                $this->InvoiceChangeStatus($invoice->order_id, 'اقلام سفارش یافت نشد');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'اقلام سفارش یافت نشد');
                 return $this->sendResponse('اقلام سفارش یافت نشد', Response::HTTP_OK, ["result" => ["msg_code" => 0,"item"=>$orderInvoice]]);
             }
 
@@ -2479,7 +2479,7 @@ class HolooController extends Controller
 
             $customerBilling= (object)$orderInvoice->customer;
             if(!isset($customerBilling->phone)){
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.فاکتور ارسالی وردپرس فاقد شماره موبایل است');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور انجام نشد.فاکتور ارسالی وردپرس فاقد شماره موبایل است');
                 $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور انجام نشد.فاکتور ارسالی وردپرس فاقد شماره موبایل است');
                 continue;
             }
@@ -2491,7 +2491,7 @@ class HolooController extends Controller
             }
             if (!$custid) {
                 //log::info("کد مشتری یافت نشد");
-                $this->InvoiceChangeStatus($invoice->order_id, " ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید");
+                $this->InvoiceChangeStatus($orderInvoice->order_id, " ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید");
                 $this->changeInvoiceStatue($invoice->invoiceId,$user,"400"," ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید");
                 continue;
             }
@@ -2507,7 +2507,7 @@ class HolooController extends Controller
 
             
             if (!isset($payment->{$orderInvoice->payment_method}) and !isset($user->config->payment->{$orderInvoice->payment_method})){
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
                 $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
             }
             if(isset($payment->{$orderInvoice->payment_method}))
@@ -2516,7 +2516,7 @@ class HolooController extends Controller
                 if(isset($orderInvoice->payment_method) and property_exists(((object) json_decode($user->config))->payment,$orderInvoice->payment_method))
                     $payment =((object) json_decode($user->config))->payment->{$orderInvoice->payment_method};
                 else{
-                    $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین در فاکتور یافت نشد');
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین در فاکتور یافت نشد');
                     $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'.روش پرداخت پلاگین در فاکتور یافت نشد');
                     continue;
                 }
@@ -2529,13 +2529,13 @@ class HolooController extends Controller
             if(!is_object($orderInvoice)){
 
                 //log::alert(json_encode($orderInvoice));
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور بدلیل عدم یافت انجام نشد');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور بدلیل عدم یافت انجام نشد');
 
                 continue;
             }
 
             // if(!isset($orderInvoice->associations->order_rows)){
-            //     $this->InvoiceChangeStatus($invoice->order_id, json_encode(["order_id"=>$orderInvoice->id,"result" => $orderInvoice,"message"=>"کد سفارش در ووکامرس یافت نشد"]));
+            //     $this->InvoiceChangeStatus($orderInvoice->order_id, json_encode(["order_id"=>$orderInvoice->id,"result" => $orderInvoice,"message"=>"کد سفارش در ووکامرس یافت نشد"]));
             //     continue;
             // }
             $cate=[];
@@ -2596,7 +2596,7 @@ class HolooController extends Controller
                         $sum_total += $total;
                     }
                     elseif($config->invoice_items_no_holo_code){
-                        $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
+                        $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                         $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                         continue 2;
                     }
@@ -2606,7 +2606,7 @@ class HolooController extends Controller
 
                 }
                 elseif($config->invoice_items_no_holo_code){
-                    $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, 'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                     $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور بدلیل ایتم فاقد کد هلو انجام نشد');
                     continue 2;
                 }
@@ -2706,7 +2706,7 @@ class HolooController extends Controller
                 if (isset($response->success) and $response->success) {
                     $this->InvoiceChangeStatus($invoice->id, 'ثبت سفارش فروش انجام شد');
                     $this->changeInvoiceStatue($invoice->invoiceId,$user,"200",'ثبت سفارش فروش انجام شد');
-                    Invoice::where(['invoiceId'=>$invoice->order_id])
+                    Invoice::where(['invoiceId'=>$orderInvoice->order_id])
                     ->update([
                         'holooInvoice' => $jsonData,
                     ]);
@@ -2718,11 +2718,11 @@ class HolooController extends Controller
                     $message = mb_convert_encoding($response->message, 'UTF-8', 'auto');
 
                     // Call the functions to change the invoice status
-                    $this->InvoiceChangeStatus($invoice->order_id, $message);
+                    $this->InvoiceChangeStatus($orderInvoice->order_id, $message);
                     $this->changeInvoiceStatue($invoice->invoiceId, $user, "400", $message);
 
                     // Update the invoice in the database
-                    Invoice::where(['invoiceId' => $invoice->order_id])
+                    Invoice::where(['invoiceId' => $orderInvoice->order_id])
                         ->update([
                             'holooInvoice' => $jsonData
                         ]);
@@ -2732,7 +2732,7 @@ class HolooController extends Controller
 
             }
             else{
-                $this->InvoiceChangeStatus($invoice->order_id, 'اقلام سفارش یافت نشد');
+                $this->InvoiceChangeStatus($orderInvoice->order_id, 'اقلام سفارش یافت نشد');
                 $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'اقلام سفارش یافت نشد');
             }
         }
