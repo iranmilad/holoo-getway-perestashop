@@ -26,7 +26,7 @@ class HolooController extends Controller
     public function getNewToken($force=false): string
     {
 
-        $user = auth()->user();
+        $user = User::first();
 
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
@@ -2501,21 +2501,9 @@ class HolooController extends Controller
             $lazy = 0;
             $scot = 0;
 
-            if (is_string($orderInvoice->payment)) {
-                $payment = json_decode($orderInvoice->payment);
-            }
-            elseif (is_array($orderInvoice->payment)) {
-                $payment = (object) $orderInvoice->payment;
-            }
-            if (!isset($orderInvoice->payment) or !(array)$orderInvoice->payment) {
-                $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
-                $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
-                continue;
-            }
-            else{
-                $payment = $config->payment;
+            $payment = $config->payment;
 
-            }
+            
             if (!isset($payment->{$orderInvoice->payment_method}) and !isset($user->config->payment->{$orderInvoice->payment_method})){
                 $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
                 $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر');
