@@ -2455,7 +2455,9 @@ class HolooController extends Controller
 
         log::info("run test");
         log::info(Carbon::now()->subMinute(600));
-        $invoices = invoice::all();
+        //get all invoice is null in status
+
+        $invoices = invoice::whereNull("status")->get()->all();
 
         foreach ($invoices as $key=>$invoice) {
             $user_id= $invoice->user_id;
