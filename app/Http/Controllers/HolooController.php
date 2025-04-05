@@ -507,11 +507,11 @@ class HolooController extends Controller
 
         if (isset($orderInvoice->save_pre_sale_invoice) and $orderInvoice->save_pre_sale_invoice!= "0") {
 
-            if($this->check_year($orderInvoice->input("date_created"))==true){
-                $_data = (object) $orderInvoice->input("date_created");
+            if($this->check_year($invoice->created_at)==true){
+                $_data = (object) $invoice->created_at;
             }
             else{
-                $_data = (object) $orderInvoice->input("date_modified");
+                $_data = (object) $invoice->created_at;
             }
             $DateString = Carbon::parse($_data->date ?? now(), $_data->timezone);
             $DateString->setTimezone('Asia/Tehran');
@@ -561,7 +561,8 @@ class HolooController extends Controller
 
             $payment =(object) $payment->{$orderInvoice->payment_method};
 
-            $orderInvoice=app('App\Http\Controllers\PshopController')->get_invoice($orderInvoice->id);
+
+            $orderInvoice = $invoice->invoice;
             //$fetchAllWCProds=app('App\Http\Controllers\PshopController')->fetchAllWCProds(true);
             if(!is_object($orderInvoice)){
                 $this->InvoiceChangeStatus($invoice->order_id, 'ثبت پیش فاکتور بدلیل عدم یافت انجام نشد');
@@ -2479,7 +2480,7 @@ class HolooController extends Controller
 
             $orderInvoice=json_decode($invoice->invoice);
 
-            $_data = (object) $orderInvoice->date_created;
+            $_data = (object) $invoice->created_at;
 
             $DateString = Carbon::parse($_data->date ?? now(), $_data->timezone);
             $DateString->setTimezone('Asia/Tehran');
