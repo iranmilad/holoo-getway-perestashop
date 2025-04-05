@@ -216,6 +216,38 @@ class Holo extends Module
             Configuration::updateValue('WEBHOOK_ORDER_ENABLED', $webhookEnabled);
         }
 
+        if (Tools::isSubmit('exportInvoicesButton')) {
+            $webhookBaseUrl = Configuration::get('WEBHOOK_BASE_URL');
+            $exportUrl = rtrim($webhookBaseUrl, '/') . '/exportInvoicesLastWeek';
+        
+            // ارسال درخواست به آن آدرس
+            $ch = curl_init($exportUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HEADER, true); // برای بررسی هدرها
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            $response = curl_exec($ch);
+            $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+            curl_close($ch);
+        
+            if ($httpCode != 200 || !$response) {
+                $this->context->controller->errors[] = $this->l('Failed to download invoice file.');
+            } else {
+                $body = substr($response, $headerSize);
+        
+                $filename = "invoices_last_week_" . date('Ymd_His') . ".xls";
+        
+                header('Content-Description: File Transfer');
+                header('Content-Type: ' . $contentType);
+                header('Content-Disposition: attachment; filename="' . $filename . '"');
+                header('Content-Length: ' . strlen($body));
+                echo $body;
+                exit;
+            }
+        }
+
         return $this->renderForm() . $this->renderLogs();
     }
 
@@ -496,6 +528,16 @@ class Holo extends Module
             'submit' => [
                 'title' => $this->l('Update All Products'),
                 'name' => 'updateProductsButton',
+            ],
+        ];
+
+        $fieldsForm[3]['form'] = [
+            'legend' => [
+                'title' => $this->l('Export Invoices'),
+            ],
+            'submit' => [
+                'title' => $this->l('Download Last Week Invoices'),
+                'name' => 'exportInvoicesButton', // نام دکمه جدید
             ],
         ];
 
