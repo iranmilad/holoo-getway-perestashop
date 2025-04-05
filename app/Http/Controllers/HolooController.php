@@ -2457,7 +2457,7 @@ class HolooController extends Controller
         log::info(Carbon::now()->subMinute(600));
         //get all invoice is null in status
 
-        $invoices = invoice::whereIn("status", [null, "ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید", "ثبت فاکتور بدلیل عدم یافت انجام نشد","ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر"])->get()->all();
+        $invoices = invoice::whereIn("status", [null,"كد كالا معتبر نمي باشد", "ثبت فاکتور انجام نشد.مشکل در ثبت مشتری جدید", "ثبت فاکتور بدلیل عدم یافت انجام نشد","ثبت فاکتور انجام نشد.روش پرداخت پلاگین نامعتبر"])->get()->all();
 
         foreach ($invoices as $key=>$invoice) {
             $user_id= $invoice->user_id;
