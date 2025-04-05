@@ -2742,38 +2742,7 @@ class HolooController extends Controller
     }
 
     public function changeInvoiceStatue($order_id,$user,$status,$message){
-        $curl = curl_init();
 
-        $data=[
-            "meta_data"=>[
-                (object)["key"=>"holo_status","value"=>$message],
-                (object)["key"=>"holo_responseCode","value"=>$status],
-            ]
-        ];
-        $data = json_encode($data);
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $user->siteUrl.'/wp-json/wc/v3/orders/'.$order_id,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_CUSTOMREQUEST => 'PUT',
-            CURLOPT_USERAGENT => 'Holoo',
-            CURLOPT_POSTFIELDS => $data,
-            CURLOPT_USERPWD => $user->consumerKey. ":" . $user->consumerSecret,
-            CURLOPT_HTTPHEADER => array(
-              //'Content-Type: multipart/form-data',
-              'Content-Type: application/json',
-            ),
-        ));
-        $responses = curl_exec($curl);
-        $responses = json_decode($responses);
-        log::info(json_encode($responses));
-        curl_close($curl);
     }
 
     private function currectMobile($mobile){
