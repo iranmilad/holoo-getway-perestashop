@@ -3,7 +3,7 @@
 namespace App\Console;
 
 
-use Illuminate\Support\Facades\Log;
+
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -18,10 +18,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        log::info("schedule test");
+        // log::info("schedule test");
 
-        // resend factor
-        $schedule->call('App\Http\Controllers\HolooController@scPayedInvoice')->name('resend factor')->everyFiveMinutes();
+        // // resend factor
+        // $schedule->call('App\Http\Controllers\HolooController@scPayedInvoice')->name('resend factor')->everyFiveMinutes();
 
     }
 }
