@@ -88,7 +88,7 @@ class HolooController extends Controller
 
     private function getAllCategory()
     {
-        $user = auth()->user();
+        $user = User::first();
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
@@ -178,7 +178,7 @@ class HolooController extends Controller
 
     public function fetchPage1HolooProducts()
     {
-        $user = auth()->user();
+        $user = User::first();
         $curl = curl_init();
         // log::info("yes");
         curl_setopt_array($curl, array(
@@ -224,7 +224,7 @@ class HolooController extends Controller
 
     public function getProductsPagingCount()
     {
-        $user = auth()->user();
+        $user = User::first();
         $curl = curl_init();
         // log::info("yes");
         curl_setopt_array($curl, array(
@@ -264,7 +264,7 @@ class HolooController extends Controller
 
     public function fetchAllHolloProdsOld()
     {
-        $user = auth()->user();
+        $user = User::first();
         $curl = curl_init();
         // log::info("yes");
         curl_setopt_array($curl, array(
@@ -291,7 +291,7 @@ class HolooController extends Controller
 
     public function fetchAllHolloProds()
     {
-        $user = auth()->user();
+        $user = User::first();
         $curl = curl_init();
         // log::info("yes");
         curl_setopt_array($curl, array(
@@ -340,7 +340,7 @@ class HolooController extends Controller
     {
         $totalProduct=[];
 
-        $user = auth()->user();
+        $user = User::first();
         $curl = curl_init();
         foreach ($categorys as $category_key=>$category_value) {
             if ($category_value != "") {
@@ -386,7 +386,7 @@ class HolooController extends Controller
     {
         $totalProduct=[];
 
-        $user = auth()->user();
+        $user = User::first();
 
 
         $curl = curl_init();
@@ -431,7 +431,7 @@ class HolooController extends Controller
     {
         $totalProduct=[];
 
-        $user = auth()->user();
+        $user = User::first();
 
 
         $curl = curl_init();
@@ -478,7 +478,7 @@ class HolooController extends Controller
 
     public function wcInvoiceRegistration(Request $orderInvoice)
     {
-        $user = auth()->user();
+        $user = User::first();
         if($user->active==false){
             log::info("user is not active");
             return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_FORBIDDEN,[]);
@@ -1012,7 +1012,7 @@ class HolooController extends Controller
 
     private function wcInvoiceBank($orderInvoice, $fee, $custid, $DateString, $kind)
     {
-        $user = auth()->user();
+        $user = User::first();
         $sarfasl=$fee->sarfasl;
         $total = $this->getAmount($fee->amount, $orderInvoice->unit_price);
         $items[] = array(
@@ -1102,7 +1102,7 @@ class HolooController extends Controller
             $this->wcSingleVariantProductUpdate($wp_product_id,$holoo_product_id,$request);
             return $this->sendResponse("محصول با موفقیت به روز شد.", Response::HTTP_OK, ["result" => ["msg_code" => 0]]);
         }
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
 
@@ -1151,7 +1151,7 @@ class HolooController extends Controller
         $wp_product_id = $wp_product_variant_id[0];
         $wp_variant_id = $wp_product_variant_id[1];
 
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
 
@@ -1200,7 +1200,7 @@ class HolooController extends Controller
         $wp_product_id = $wp_product_variant_id[0];
         $wp_variant_id = $wp_product_variant_id[1];
 
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
 
@@ -1247,7 +1247,7 @@ class HolooController extends Controller
 
     public function GetSingleProductHolooOld($holoo_id)
     {
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
         $curl = curl_init();
@@ -1277,7 +1277,7 @@ class HolooController extends Controller
     }
     public function GetSingleProductHoloo($holoo_id)
     {
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
         $curl = curl_init();
@@ -1321,7 +1321,7 @@ class HolooController extends Controller
     }
     public function GetMultiProductHoloo($holooCodes)
     {
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
         $curl = curl_init();
@@ -1366,7 +1366,7 @@ class HolooController extends Controller
     }
     public function GetMultiPoshakProductHoloo($holooCodes)
     {
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
         $curl = curl_init();
@@ -1423,7 +1423,7 @@ class HolooController extends Controller
     }
     public function GetPooshakProps()
     {
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
         $curl = curl_init();
@@ -1465,7 +1465,7 @@ class HolooController extends Controller
     }
     public function GetPooshakPropsWithChild()
     {
-        $user = auth()->user();
+        $user = User::first();
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
         $curl = curl_init();
@@ -1516,7 +1516,7 @@ class HolooController extends Controller
 
     public function wcAddAllHolooProductsCategory(Request $request)
     {
-        $user = auth()->user();
+        $user = User::first();
         if($user->active==false){
             log::info("user is not active");
             return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_FORBIDDEN,[]);
@@ -1618,7 +1618,7 @@ class HolooController extends Controller
 
     public function wcAddAllHolooProductsCategory2(Request $request)
     {
-        $user = auth()->user();
+        $user = User::first();
         $user_id = $user->id;
         $counter = 0;
         if (ProductRequest::where(['user_id' => $user_id])->exists()) {
@@ -1641,7 +1641,7 @@ class HolooController extends Controller
     public function wcGetExcelProducts()
     {
         $counter = 0;
-        $user = auth()->user();
+        $user = User::first();
         if($user->active==false){
             log::info("user is not active");
             return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_FORBIDDEN,[]);
@@ -1747,7 +1747,7 @@ class HolooController extends Controller
     {
 
         $counter = 0;
-        $user = auth()->user();
+        $user = User::first();
         $user_id = $user->id;
         $userSerial = $user->serial;
         $userApiKey = $user->apiKey;
@@ -1847,7 +1847,7 @@ class HolooController extends Controller
 
     public function getAccountBank(Request $config)
     {
-        $user = auth()->user();
+        $user = User::first();
         if($user->active==false){
             log::info("user is not active");
             return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_FORBIDDEN,[]);
@@ -1880,7 +1880,7 @@ class HolooController extends Controller
 
     public function getAccountCash(Request $config)
     {
-        $user = auth()->user();
+        $user = User::first();
         if($user->active==false){
             log::info("user is not active");
             return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_FORBIDDEN,[]);
@@ -1940,7 +1940,7 @@ class HolooController extends Controller
     private function getHolooCustomerID($customer, $customerId)
     {
         $curl = curl_init();
-        $user = auth()->user();
+        $user = User::first();
 
         if (is_array($customer)) {
             $customer = (object) $customer;
@@ -1987,7 +1987,7 @@ class HolooController extends Controller
 
     private function getHolooDataTable($table = "customer")
     {
-        $user = auth()->user();
+        $user = User::first();
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
@@ -2014,7 +2014,7 @@ class HolooController extends Controller
 
     private function createHolooCustomer($customer, $customerId)
     {
-        $user = auth()->user();
+        $user = User::first();
         $curl = curl_init();
 
         $customer_account=$user->customer_sarfasl;
@@ -2182,7 +2182,7 @@ class HolooController extends Controller
     }
 
     public function get_all_accounts(){
-        $user = auth()->user();
+        $user = User::first();
         if($user->active==false){
             log::info("user is not active");
             return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_FORBIDDEN,[]);
@@ -2236,7 +2236,7 @@ class HolooController extends Controller
     }
 
     public function get_shipping_accounts(){
-        $user = auth()->user();
+        $user = User::first();
         if($user->active==false){
             log::info("user is not active");
             return $this->sendResponse('کاربر مورد نظر غیر فعال است', Response::HTTP_FORBIDDEN,[]);
