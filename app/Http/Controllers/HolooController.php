@@ -2453,10 +2453,10 @@ class HolooController extends Controller
     public function scPayedInvoice(){
 
         log::info("run test");
-        log::info(Carbon::now()->subMinute(60));
+        log::info(Carbon::now()->subMinute(120));
         $invoices = invoice::where(function($query) {
             $query->where([
-                ['updated_at', '>', Carbon::now()->subMinute(60)],
+                ['updated_at', '>', Carbon::now()->subMinute(120)],
                 ['updated_at', '<', Carbon::now()->subMinute(2)]
             ]);
         })->where(function($query) {
