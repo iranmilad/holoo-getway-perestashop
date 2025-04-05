@@ -2484,7 +2484,7 @@ class HolooController extends Controller
             $DateString = Carbon::parse($_data->date ?? now(), $_data->timezone);
             $DateString->setTimezone('Asia/Tehran');
 
-            $customerBilling= (object)$orderInvoice->billing;
+            $customerBilling= (object)$orderInvoice->customer;
             if(!isset($customerBilling->phone)){
                 $this->InvoiceChangeStatus($invoice->order_id, 'ثبت فاکتور انجام نشد.فاکتور ارسالی وردپرس فاقد شماره موبایل است');
                 $this->changeInvoiceStatue($invoice->invoiceId,$user,"400",'ثبت فاکتور انجام نشد.فاکتور ارسالی وردپرس فاقد شماره موبایل است');
@@ -2492,7 +2492,7 @@ class HolooController extends Controller
             }
 
             if($user->fix_customer_account==false)
-                $custid = $this->getHolooCustomerID($orderInvoice->billing, $orderInvoice->customer_id);
+                $custid = $this->getHolooCustomerID($orderInvoice->customer, $orderInvoice->customer_id);
             else{
                 $custid =$user->customer_account;
             }
@@ -2541,7 +2541,7 @@ class HolooController extends Controller
                 }
             }
             //log::info("payment: ".json_encode($payment));
-            $orderInvoice=(object)app('App\Http\Controllers\PshopController')->get_invoice($orderInvoice->order_id);
+            //$orderInvoice=(object)app('App\Http\Controllers\PshopController')->get_invoice($orderInvoice->order_id);
             //$fetchAllWCProds=app('App\Http\Controllers\PshopController')->fetchAllWCProds(true);
 
 
@@ -2553,13 +2553,13 @@ class HolooController extends Controller
                 continue;
             }
 
-            if(!isset($orderInvoice->associations->order_rows)){
-                $this->InvoiceChangeStatus($invoice->order_id, json_encode(["order_id"=>$orderInvoice->id,"result" => $orderInvoice,"message"=>"کد سفارش در ووکامرس یافت نشد"]));
-                continue;
-            }
+            // if(!isset($orderInvoice->associations->order_rows)){
+            //     $this->InvoiceChangeStatus($invoice->order_id, json_encode(["order_id"=>$orderInvoice->id,"result" => $orderInvoice,"message"=>"کد سفارش در ووکامرس یافت نشد"]));
+            //     continue;
+            // }
             $cate=[];
 
-            foreach ($orderInvoice->associations->order_rows as $item) {
+            foreach ($orderInvoice->items as $item) {
                 if (is_array($item)) {
                     $item = (object) $item;
                 }
@@ -2667,7 +2667,7 @@ class HolooController extends Controller
                         'apiname' => 'InvoicePost',
                         'dto' => array(
                             'invoiceinfo' => array(
-                                'id' => (int)$orderInvoice->id, //$oreder->id
+                                'id' => (int)$orderInvoice->order_id, //$oreder->id
                                 'Type' => 1, //1 faktor frosh 2 pish factor, 3 sefaresh =>$type
                                 'kind' => 4,
                                 'Date' => $DateString->format('Y-m-d'),
